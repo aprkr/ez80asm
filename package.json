@@ -1,0 +1,50 @@
+{
+	"name": "ez80-asm",
+	"displayName": "EZ80 Assembly",
+	"description": "EZ80 and Z80 Assembly syntax highlighting for Visual Studio Code",
+	"repository": {
+        "type": "git",
+        "url": "https://github.com/nope/haha"
+	},
+	"icon": "logo.png",
+	"version": "1.0.0",
+	"author": "Alex Parker",
+	"publisher": "Alex Parker",
+	"engines": {
+		"vscode": "^1.0.0"
+	},
+
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"assembly",
+		"z80",
+		"ez80",
+		"game boy"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "ez80-asm",
+				"aliases": [ "(E)Z80 Assembly"],
+				"extensions": [".asm", ".z80", ".ez80"],
+				"configuration": "./ez80-asm.language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "ez80-asm",
+				"scopeName": "source.z80",
+				"path": "./syntaxes/ez80-asm.tmLanguage"
+			}
+		],
+		"iconThemes": [
+			{
+				"id": "ez80-asm",
+				"label": "(E)Z80 Asm",
+				"path": "./fileicons/icon.json"
+			}
+		]
+	}
+}

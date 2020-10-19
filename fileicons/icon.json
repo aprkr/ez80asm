@@ -1,0 +1,8 @@
+{
+"iconDefinitions": {
+    "(e)z80file": {
+        "iconPath": "icon.png"
+        }
+    },
+    "languageIds": {"ez80-asm": "(e)z80file"}
+}
