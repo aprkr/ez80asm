@@ -121,7 +121,7 @@
 
 		<dict>
 			<key>match</key>
-			<string>\$(0x)?\h+\b</string> <!--starts with "$", 0x is optional, \h means hex digits-->
+			<string>(\$|0x)\h+\b</string> <!--starts with "$", 0x is optional, \h means hex digits-->
 			<key>name</key>
 			<string>constant.numeric.hex.z80</string>
 		</dict>
