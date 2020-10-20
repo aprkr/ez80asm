@@ -42,13 +42,6 @@
 				"scopeName": "source.z80",
 				"path": "./syntaxes/ez80-asm.tmLanguage"
 			}
-		],
-		"iconThemes": [
-			{
-				"id": "ez80-asm",
-				"label": "EZ80 Asm",
-				"path": "./fileicons/icon.json"
-			}
 		]
 	}
 }
