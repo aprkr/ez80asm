@@ -31,7 +31,7 @@
 		"languages": [
 			{
 				"id": "ez80-asm",
-				"aliases": [ "(E)Z80 Assembly"],
+				"aliases": [ "EZ80 Assembly"],
 				"extensions": [".asm", ".z80", ".ez80"],
 				"configuration": "./ez80-asm.language-configuration.json"
 			}
@@ -46,7 +46,7 @@
 		"iconThemes": [
 			{
 				"id": "ez80-asm",
-				"label": "(E)Z80 Asm",
+				"label": "EZ80 Asm",
 				"path": "./fileicons/icon.json"
 			}
 		]
