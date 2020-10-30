@@ -8,8 +8,9 @@
 	},
 	"icon": "logo.png",
 	"version": "1.0.0",
+	"license": "SEE LICENSE IN LICENSE.txt",
 	"author": "Alex Parker",
-	"publisher": "Alex Parker",
+	"publisher": "Alex-Parker",
 	"engines": {
 		"vscode": "^1.0.0"
 	},

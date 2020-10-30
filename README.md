@@ -6,3 +6,7 @@ The (E)Z80 Assembly extension for Visual Studio provides syntax Highlighting for
 * Highlighting assembler directives
 * Highlighting opcodes, registers, and numbers
 
+## License
+
+This project is subject to [these terms](https://github.com/LiberalEater/ez80asm/blob/main/LICENSE.txt).
+
