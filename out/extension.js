@@ -1,10 +1,15 @@
+// Much of this source is based on the "RGBDS Z80" extension by Donald Hays
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const hover = require("./hover");
+const documentSymbolProvider = require("./documentSymbolProvider");
+const symbolDocumenter_1 = require("./symbolDocumenter");
 
 function activate(context) {
-    context.subscriptions.push(hover)
+    const symbolDocumenter = new symbolDocumenter_1.ASMSymbolDocumenter();    
+    context.subscriptions.push(vscode.languages.registerHoverProvider('ez80-asm', new hover.ASMHoverProvider(symbolDocumenter)));
+    context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated
