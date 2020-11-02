@@ -3,12 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
+// const syntaxInfo_1 = require("./syntaxInfo");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^include[\s]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
-const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\s]+(equ|equs|set)[\s]+.*$/i;
+const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\s]+.*$/i;
+// const instructionRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.instructions.join("|")})\\b`, "i");
+// const keywordRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.preprocessorKeywords.join("|")})\\b`, "i");
 class ScopeDescriptor {
     constructor(start, end) {
         this.start = start;
@@ -43,7 +46,7 @@ var SearchMode;
 class ASMSymbolDocumenter {
     constructor() {
         this.files = {};
-        vscode.workspace.findFiles("**/*.{z80,inc,asm}", null, undefined).then((files) => {
+        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, undefined).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
                     this._document(document);
@@ -53,7 +56,7 @@ class ASMSymbolDocumenter {
         vscode.workspace.onDidChangeTextDocument((event) => {
             this._document(event.document);
         });
-        const watcher = vscode.workspace.createFileSystemWatcher("**/*.{z80,inc,asm}");
+        const watcher = vscode.workspace.createFileSystemWatcher("**/*.{ez80,z80,inc,asm}");
         watcher.onDidChange((uri) => {
             vscode.workspace.openTextDocument(uri).then((document) => {
                 this._document(document);
@@ -230,6 +233,12 @@ class ASMSymbolDocumenter {
                 }
                 else if (labelMatch) {
                     const declaration = labelMatch[1];
+                    // if (instructionRegex.test(declaration)) {
+                        // continue;
+                    // }
+                    // if (keywordRegex.test(declaration)) {
+                        // continue;
+                    // }
                     if (declaration.indexOf(".") == -1) {
                         if (currentScope) {
                             currentScope.end = document.positionAt(document.offsetAt(line.range.start) - 1);

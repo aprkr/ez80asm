@@ -3,12 +3,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const hover = require("./hover");
+const definitionProvider_1 = require("./definitionProvider");
 const documentSymbolProvider = require("./documentSymbolProvider");
 const symbolDocumenter_1 = require("./symbolDocumenter");
 
 function activate(context) {
     const symbolDocumenter = new symbolDocumenter_1.ASMSymbolDocumenter();    
     context.subscriptions.push(vscode.languages.registerHoverProvider('ez80-asm', new hover.ASMHoverProvider(symbolDocumenter)));
+    context.subscriptions.push(vscode.languages.registerDefinitionProvider('ez80-asm', new definitionProvider_1.ASMDefinitionProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
 }
 exports.activate = activate;
