@@ -208,7 +208,7 @@ class ASMSymbolDocumenter {
         return this.symbols(searchContext)[name];
     }
     _pushDocumentationLine(line, buffer) {
-        if ((line.indexOf("@") == 0 || vscode.workspace.getConfiguration().get("rgbdsz80.includeAllDocCommentNewlines")) && buffer.length > 0) {
+        if (buffer.length > 0) {
             let lastLine = buffer[buffer.length - 1];
             if (lastLine.lastIndexOf("  ") != lastLine.length - 2) {
                 buffer[buffer.length - 1] = lastLine + "  ";
