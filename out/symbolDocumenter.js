@@ -6,7 +6,7 @@ const fs = require("fs");
 // const syntaxInfo_1 = require("./syntaxInfo");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
-const includeLineRegex = /^include[\s]+"([^"]+)".*$/i;
+const includeLineRegex = /^\#?include[\W]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\s]+.*$/i;
@@ -53,6 +53,13 @@ class ASMSymbolDocumenter {
                 });
             });
         });
+        let alldocs = vscode.workspace.textDocuments;
+        for (let i = 0; i < alldocs.length; ++i) {
+            if (alldocs[i].languageId == 'ez80-asm') {
+                vscode.workspace.openTextDocument(alldocs[i].uri).then((document) => {
+                    this._document(document);
+            });
+        }}
         vscode.workspace.onDidChangeTextDocument((event) => {
             this._document(event.document);
         });
