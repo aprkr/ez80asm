@@ -14,7 +14,7 @@ class ASMDocumentSymbolProvider {
         for (const name in table.symbols) {
             if (table.symbols.hasOwnProperty(name)) {
                 const symbol = table.symbols[name];
-                output.push(new vscode.SymbolInformation(name, symbol.kind, symbol.location.range));
+                output.push(new vscode.SymbolInformation(name, symbol.kind, undefined, symbol.location));
             }
         }
         return output;
