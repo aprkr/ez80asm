@@ -43,6 +43,27 @@
 				"scopeName": "source.z80",
 				"path": "./syntaxes/ez80-asm.tmLanguage"
 			}
+		],
+		"configuration": [
+			{
+				"type": "object",
+				"title": "EZ80 Assembly",
+				"properties": {
+					"ez80asm.includeAllDocCommentNewlines": {
+						"description": "Makes every line of comments in a doc comment carry through a newline literal in the output Markdown.",
+						"type": "boolean",
+						"default": true
+					},
+					"ez80asm.includePath": {
+						"description": "Specifies folder paths to search for include files.",
+						"type": [
+							"array",
+							"string"
+						],
+						"default": []
+					}
+				}
+			}
 		]
 	}
 }

@@ -9,7 +9,7 @@ const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\#?include[\W]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
-const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\s]+.*$/i;
+const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
 // const instructionRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.instructions.join("|")})\\b`, "i");
 // const keywordRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.preprocessorKeywords.join("|")})\\b`, "i");
 class ScopeDescriptor {
@@ -53,13 +53,6 @@ class ASMSymbolDocumenter {
                 });
             });
         });
-        let alldocs = vscode.workspace.textDocuments;
-        for (let i = 0; i < alldocs.length; ++i) {
-            if (alldocs[i].languageId == 'ez80-asm') {
-                vscode.workspace.openTextDocument(alldocs[i].uri).then((document) => {
-                    this._document(document);
-            });
-        }}
         vscode.workspace.onDidChangeTextDocument((event) => {
             this._document(event.document);
         });
@@ -85,7 +78,7 @@ class ASMSymbolDocumenter {
             return simpleJoin;
         }
         // Grab the configured include paths. If it's a string, make it an array.
-        var includePathConfiguration = vscode.workspace.getConfiguration().get("rgbdsz80.includePath");
+        var includePathConfiguration = vscode.workspace.getConfiguration().get("ez80asm.includePath");
         if (typeof includePathConfiguration === "string") {
             includePathConfiguration = [includePathConfiguration];
         }
@@ -101,6 +94,13 @@ class ASMSymbolDocumenter {
             // Test for existence of the filename glued onto the include path.
             var joined = path.resolve(includePath, filename);
             if (fs.existsSync(joined)) {
+                const table = this.files[joined];
+                if (table == undefined) { // This slows things down a bit
+                    let includeUri = vscode.Uri.file(joined);
+                    vscode.workspace.openTextDocument(includeUri).then((document) => {
+                    this._document(document);
+                });  
+                }                    
                 return joined;
             }
         }
@@ -128,7 +128,7 @@ class ASMSymbolDocumenter {
                 const globalFileDirname = path.dirname(globalFilePath);
                 for (var i = 0; i < table.includedFiles.length; i++) {
                     const resolvedIncluded = this._resolveFilename(table.includedFiles[i], globalFileDirname);
-                    if (resolvedIncluded == fsPath) {
+                    if (resolvedIncluded) {
                         this._seekSymbols(globalName, globalFileDirname, output, searched, SearchMode.includes);
                         this._seekSymbols(globalName, globalFileDirname, output, searched, SearchMode.parents);
                         break;
@@ -156,9 +156,7 @@ class ASMSymbolDocumenter {
             if (table.symbols.hasOwnProperty(name)) {
                 const symbol = table.symbols[name];
                 if (!(name in output)) {
-                    if ((mode != SearchMode.globals) || symbol.isExported) {
-                        output[name] = symbol;
-                    }
+                    output[name] = symbol;
                 }
             }
         }
@@ -208,7 +206,7 @@ class ASMSymbolDocumenter {
         return this.symbols(searchContext)[name];
     }
     _pushDocumentationLine(line, buffer) {
-        if (buffer.length > 0) {
+        if ((line.indexOf("@") == 0 || vscode.workspace.getConfiguration().get("ez80asm.includeAllDocCommentNewlines")) && buffer.length > 0) {
             let lastLine = buffer[buffer.length - 1];
             if (lastLine.lastIndexOf("  ") != lastLine.length - 2) {
                 buffer[buffer.length - 1] = lastLine + "  ";
