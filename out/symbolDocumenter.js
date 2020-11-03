@@ -19,12 +19,12 @@ class ScopeDescriptor {
     }
 }
 class SymbolDescriptor {
-    constructor(location, isExported, isLocal, kind, scope, documentation) {
+    constructor(location, kind, documentation) {
         this.location = location;
-        this.isExported = isExported;
-        this.isLocal = isLocal;
+        // this.isExported = isExported;
+        // this.isLocal = isLocal;
         this.kind = kind;
-        this.scope = scope;
+        // this.scope = scope;
         this.documentation = documentation;
     }
 }
@@ -94,9 +94,9 @@ class ASMSymbolDocumenter {
             // Test for existence of the filename glued onto the include path.
             var joined = path.resolve(includePath, filename);
             if (fs.existsSync(joined)) {
-                const table = this.files[joined];
-                if (table == undefined) { // This slows things down a bit
-                    let includeUri = vscode.Uri.file(joined);
+                let includeUri = vscode.Uri.file(joined);
+                const table = this.files[includeUri.fsPath]; // this.files is very picky
+                if (table == undefined) {
                     vscode.workspace.openTextDocument(includeUri).then((document) => {
                     this._document(document);
                 });  
@@ -217,7 +217,7 @@ class ASMSymbolDocumenter {
     _document(document) {
         const table = new FileTable(document.uri.fsPath);
         this.files[document.uri.fsPath] = table;
-        let currentScope = undefined;
+        // let currentScope = undefined;
         let commentBuffer = [];
         for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
             const line = document.lineAt(lineNumber);
@@ -244,18 +244,18 @@ class ASMSymbolDocumenter {
                     // if (keywordRegex.test(declaration)) {
                         // continue;
                     // }
-                    if (declaration.indexOf(".") == -1) {
-                        if (currentScope) {
-                            currentScope.end = document.positionAt(document.offsetAt(line.range.start) - 1);
-                        }
-                        currentScope = new ScopeDescriptor(line.range.start);
-                        table.scopes.push(currentScope);
-                    }
+                    // if (declaration.indexOf(".") == -1) {
+                    //     if (currentScope) {
+                    //         currentScope.end = document.positionAt(document.offsetAt(line.range.start) - 1);
+                    //     }
+                    //     currentScope = new ScopeDescriptor(line.range.start);
+                    //     table.scopes.push(currentScope);
+                    // }
                     const isFunction = declaration.indexOf(":") != -1;
                     const name = declaration.replace(/:+/, "");
                     const location = new vscode.Location(document.uri, line.range.start);
-                    const isExported = declaration.indexOf("::") != -1;
-                    const isLocal = declaration.indexOf(".") != -1;
+                    // const isExported = declaration.indexOf("::") != -1;
+                    // const isLocal = declaration.indexOf(".") != -1;
                     let documentation = undefined;
                     const endCommentMatch = endCommentRegex.exec(line.text);
                     if (endCommentMatch) {
@@ -269,14 +269,14 @@ class ASMSymbolDocumenter {
                     if (commentBuffer.length > 0) {
                         documentation = commentBuffer.join("\n");
                     }
-                    table.symbols[name] = new SymbolDescriptor(location, isExported, isLocal, isFunction ? vscode.SymbolKind.Function : vscode.SymbolKind.Constant, currentScope, documentation);
+                    table.symbols[name] = new SymbolDescriptor(location, isFunction ? vscode.SymbolKind.Function : vscode.SymbolKind.Constant, documentation);
                 }
                 commentBuffer = [];
             }
         }
-        if (currentScope) {
-            currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
-        }
+        // if (currentScope) {
+            // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
+        // }
     }
 }
 exports.ASMSymbolDocumenter = ASMSymbolDocumenter;
