@@ -137,6 +137,13 @@
 
 		<dict>
 			<key>match</key>
+			<string>\h+h\b</string> <!--\h means hex digits-->
+			<key>name</key>
+			<string>constant.numeric.hex.z80</string>
+		</dict>
+
+		<dict>
+			<key>match</key>
 			<string>\$.+?\s</string> <!--starts with "$", invalid till whitespace-->
 			<key>name</key>
 			<string>invalid</string>
