@@ -13,13 +13,14 @@ class ASMSemanticTokenProvider {
        const symbols = this.symbolDocumenter.symbols(document);
        const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
        for (const name in symbols) {
-              if (symbols.hasOwnProperty(name)) {
-                     let symrange = symbols[name].location.range;
+           const symbol = symbols[name];
+            let symrange = symbol.location.range
+              if (symrange.end != symrange.start) { // this always not true for some reason
                      tokensBuilder.push(symrange, 'function', ['declaration']);
                      }
        }
-       // let SemanticTokens = tokensBuilder.build();
-       return tokensBuilder.build();
+       let SemanticTokens = tokensBuilder.build();
+       return SemanticTokens;
     }
 }
 exports.ASMSemanticTokenProvider = ASMSemanticTokenProvider;
