@@ -1,7 +1,7 @@
 ## 1.1.0
-* Hover now can show label and macro documentation
+* Hover can now show label and macro documentation in current file and included files
 * Added label and macro definitions
-* Can search all included files in the workspace for symbols
+* Global include file directories
 
 ## 1.0.0
 * Initial Release
