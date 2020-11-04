@@ -3,11 +3,11 @@
 	"displayName": "EZ80 Assembly",
 	"description": "EZ80 and Z80 Assembly syntax highlighting for Visual Studio Code",
 	"repository": {
-        "type": "git",
-        "url": "https://github.com/LiberalEater/ez80asm.git"
+		"type": "git",
+		"url": "https://github.com/LiberalEater/ez80asm.git"
 	},
 	"icon": "logo.png",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"license": "SEE LICENSE IN LICENSE.txt",
 	"author": "Alex Parker",
 	"publisher": "Alex-Parker",
@@ -18,7 +18,6 @@
 		"onLanguage:ez80-asm"
 	],
 	"main": "./out/extension.js",
-	
 	"categories": [
 		"Programming Languages"
 	],
@@ -32,8 +31,14 @@
 		"languages": [
 			{
 				"id": "ez80-asm",
-				"aliases": [ "EZ80 Assembly"],
-				"extensions": [".asm", ".z80", ".ez80"],
+				"aliases": [
+					"EZ80 Assembly"
+				],
+				"extensions": [
+					".asm",
+					".z80",
+					".ez80"
+				],
 				"configuration": "./ez80-asm.language-configuration.json"
 			}
 		],
