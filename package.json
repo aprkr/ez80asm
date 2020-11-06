@@ -82,6 +82,22 @@
 						"description": "Choose if you want snippets to insert a tab between Mnemonics and operands",
 						"type": "boolean",
 						"default": false
+					},
+					"ez80-asm.alwaysUppercaseStrings": {
+						"description": "Specific strings you want always capitalized",
+						"type": [
+							"array",
+							"string"
+						],
+						"default": []
+					},
+					"ez80-asm.alwaysLowercaseStrings": {
+						"description": "Specific strings you want always lowercased",
+						"type": [
+							"array",
+							"string"
+						],
+						"default": []
 					}
 
 				}

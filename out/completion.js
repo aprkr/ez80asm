@@ -61,6 +61,18 @@ class ASMCompletionProposer {
                 if (vscode.workspace.getConfiguration().get("ez80-asm.insertTabBetweenMnemonicsAndOperands")) {
                     element.name = element.name.replace(" ", "\t");
                 }
+                const casingUpper = vscode.workspace.getConfiguration().get("ez80-asm.alwaysUppercaseStrings");
+                for (let i = 0; i < casingUpper.length; ++i) {
+                    if (element.name.includes(casingUpper[i])) {
+                        element.name = element.name.toUpperCase();
+                    }
+                }
+                const casingLower = vscode.workspace.getConfiguration().get("ez80-asm.alwaysLowercaseStrings");
+                for (let i = 0; i < casingLower.length; ++i) {
+                    if (element.name.includes(casingLower[i])) {
+                        element.name = element.name.toLowerCase();
+                    }
+                }
 
                 const item = new vscode.CompletionItem(element.name, vscode.CompletionItemKind.Snippet);
                 // const nameLine = `\`${element.name}\``;
