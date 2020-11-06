@@ -14,7 +14,7 @@ function activate(context) {
     context.subscriptions.push(vscode.languages.registerHoverProvider('ez80-asm', new hover.ASMHoverProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDefinitionProvider('ez80-asm', new definitionProvider_1.ASMDefinitionProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
-    context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', new completionProposer.ASMCompletionProposer(symbolDocumenter), `"`));
+    context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', new completionProposer.ASMCompletionProposer(symbolDocumenter)));
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated

@@ -53,10 +53,13 @@ class ASMCompletionProposer {
                 }
             }
             output.forEach((element) => {
-                if (vscode.workspace.getConfiguration().get("ez80-asm.upperCaseSnippets")) {
+                if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("UPPER")) {
                     element.name = element.name.toUpperCase();
-                } else if (vscode.workspace.getConfiguration().get("ez80-asm.lowerCaseSnippets")) {
+                } else if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("lower")) {
                     element.name = element.name.toLowerCase();
+                }
+                if (vscode.workspace.getConfiguration().get("ez80-asm.insertTabBetweenMnemonicsAndOperands")) {
+                    element.name = element.name.replace(" ", "\t");
                 }
 
                 const item = new vscode.CompletionItem(element.name, vscode.CompletionItemKind.Snippet);
@@ -86,11 +89,11 @@ class ASMCompletionProposer {
                 }
                 item.documentation = new vscode.MarkdownString(lines.join("  \\\n"));
                 let insertText = element.name;
-                // let tabIndex = 1;
+                let tabIndex = 1;
                 insertText = insertText.replace("$", "\\$");
-                insertText = insertText.replace(/\b(n8|n24|r8|r24)\b/g, (substring) => {
-                    // return `\${${tabIndex++}:${substring}}`;
-                    return `\${0:${substring}}`;
+                insertText = insertText.replace(/\b(n8|n24|r8|r24|N8|N24|R8|R24)\b/g, (substring) => {
+                    return `\${${tabIndex--}:${substring}}`;
+                    // return `\${0:${substring}}`;
                 });
                 // If there's only one completion item, set index to 0 for a better
                 // experience.
@@ -98,7 +101,7 @@ class ASMCompletionProposer {
                 //     insertText = insertText.replace("${1:", "${0:");
                 // }
                 if (insertText != element.name) {
-                    console.log(insertText);
+                    // console.log(insertText);
                     item.insertText = new vscode.SnippetString(insertText);
                 }
                 this.instructionItems.push(item);
@@ -108,8 +111,8 @@ class ASMCompletionProposer {
 
 provideCompletionItems(document, position, token, context) {
     let output = [];
-    let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
-    let triggerWordLine = document.getText(triggerWordLineRange);
+    // let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
+    // let triggerWordLine = document.getText(triggerWordLineRange);
     let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
     let triggerWord = document.getText(triggerWordRange);
     if (triggerWord.length < 2) {

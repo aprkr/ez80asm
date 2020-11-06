@@ -68,10 +68,22 @@
 						"default": []
 					},
 					"ez80-asm.enableSnippetSuggestions": {
-						"description": "Enable Instruction Snippets to be suggested",
+						"description": "Enable Instruction Snippets suggestions",
 						"type": "boolean",
 						"default": true
+					},
+					"ez80-asm.caseSnippets": {
+						"description": "Choose what case you want snippets to be",
+						"type": "string",
+						"default": "lower case",
+						"enum": ["UPPER CASE", "lower case"]
+					},
+					"ez80-asm.insertTabBetweenMnemonicsAndOperands": {
+						"description": "Choose if you want snippets to insert a tab between Mnemonics and operands",
+						"type": "boolean",
+						"default": false
 					}
+
 				}
 			}
 		]
