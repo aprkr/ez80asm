@@ -6,12 +6,15 @@ const hover = require("./hover");
 const definitionProvider_1 = require("./definitionProvider");
 const documentSymbolProvider = require("./documentSymbolProvider");
 const symbolDocumenter_1 = require("./symbolDocumenter");
+const completionProposer = require("./completion");
+
 
 function activate(context) {
-    const symbolDocumenter = new symbolDocumenter_1.ASMSymbolDocumenter();    
+    const symbolDocumenter = new symbolDocumenter_1.ASMSymbolDocumenter();
     context.subscriptions.push(vscode.languages.registerHoverProvider('ez80-asm', new hover.ASMHoverProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDefinitionProvider('ez80-asm', new definitionProvider_1.ASMDefinitionProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
+    context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', new completionProposer.ASMCompletionProposer(symbolDocumenter)));
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated
