@@ -79,26 +79,8 @@
 		</dict>
 
 		<dict>
-			<key>begin</key>
-			<string>'</string>
-			<key>beginCaptures</key>
-			<dict>
-				<key>0</key>
-				<dict>
-					<key>name</key>
-					<string>punctuation.definition.string.begin.z80</string>
-				</dict>
-			</dict>
-			<key>end</key>
-			<string>'</string>
-			<key>endCaptures</key>
-			<dict>
-				<key>0</key>
-				<dict>
-					<key>name</key>
-					<string>punctuation.definition.string.end.z80</string>
-				</dict>
-			</dict>
+			<key>match</key>
+			<string>\'.\'</string>
 			<key>name</key>
 			<string>string.quoted.single.z80</string>
 		</dict>
@@ -166,7 +148,7 @@
 		<!--Registers-->
 		<dict>
 			<key>match</key>
-			<string>\b(A|B|C|D|E|F|H|L|I|R|IX|IY|AF|BC|DE|HL|PC|SP|AF'|Z|a|b|c|d|e|f|h|l|i|r|ix|iy|af|bc|de|hl|pc|sp|af'|z|HLI|hli|HLD|hld)\b</string>
+			<string>\b(A|B|C|D|E|F|H|L|I|R|IX|IY|AF|BC|DE|HL|PC|SP|AF'|MB|a|b|c|d|e|f|h|l|i|r|ix|iy|af|bc|de|hl|pc|sp|af'|mb)\b</string>
 			<key>name</key>
 			<string>keyword.registers.z80</string>
 		</dict>	

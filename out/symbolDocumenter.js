@@ -78,7 +78,7 @@ class ASMSymbolDocumenter {
             return simpleJoin;
         }
         // Grab the configured include paths. If it's a string, make it an array.
-        var includePathConfiguration = vscode.workspace.getConfiguration().get("ez80asm.includePath");
+        var includePathConfiguration = vscode.workspace.getConfiguration().get("ez80-asm.includePath");
         if (typeof includePathConfiguration === "string") {
             includePathConfiguration = [includePathConfiguration];
         }
@@ -98,9 +98,9 @@ class ASMSymbolDocumenter {
                 const table = this.files[includeUri.fsPath]; // this.files is very picky
                 if (table == undefined) {
                     vscode.workspace.openTextDocument(includeUri).then((document) => {
-                    this._document(document);
-                });  
-                }                    
+                        this._document(document);
+                    });
+                }
                 return joined;
             }
         }
@@ -206,7 +206,7 @@ class ASMSymbolDocumenter {
         return this.symbols(searchContext)[name];
     }
     _pushDocumentationLine(line, buffer) {
-        if ((line.indexOf("@") == 0 || vscode.workspace.getConfiguration().get("ez80asm.includeAllDocCommentNewlines")) && buffer.length > 0) {
+        if ((line.indexOf("@") == 0 || vscode.workspace.getConfiguration().get("ez80-asm.includeAllDocCommentNewlines")) && buffer.length > 0) {
             let lastLine = buffer[buffer.length - 1];
             if (lastLine.lastIndexOf("  ") != lastLine.length - 2) {
                 buffer[buffer.length - 1] = lastLine + "  ";
@@ -239,10 +239,10 @@ class ASMSymbolDocumenter {
                 else if (labelMatch) {
                     const declaration = labelMatch[1];
                     // if (instructionRegex.test(declaration)) {
-                        // continue;
+                    // continue;
                     // }
                     // if (keywordRegex.test(declaration)) {
-                        // continue;
+                    // continue;
                     // }
                     // if (declaration.indexOf(".") == -1) {
                     //     if (currentScope) {
@@ -251,7 +251,11 @@ class ASMSymbolDocumenter {
                     //     currentScope = new ScopeDescriptor(line.range.start);
                     //     table.scopes.push(currentScope);
                     // }
-                    const isFunction = declaration.indexOf(":") != -1;
+                    let kind = undefined;
+                    // const isFunction = declaration.indexOf(":") != -1;
+                    if (declaration.indexOf(":") != -1) {
+                        kind = vscode.SymbolKind.Method;
+                    }
                     const name = declaration.replace(/:+/, "");
                     const location = new vscode.Location(document.uri, line.range.start);
                     // const isExported = declaration.indexOf("::") != -1;
@@ -265,17 +269,18 @@ class ASMSymbolDocumenter {
                         const trimmed = line.text.replace(/[\s]+/, " ");
                         const withoutComment = trimmed.replace(/;.*$/, "");
                         commentBuffer.splice(0, 0, `\`${withoutComment}\`\n`);
+                        kind = vscode.SymbolKind.Constant
                     }
                     if (commentBuffer.length > 0) {
                         documentation = commentBuffer.join("\n");
                     }
-                    table.symbols[name] = new SymbolDescriptor(location, isFunction ? vscode.SymbolKind.Function : vscode.SymbolKind.Constant, documentation);
+                    table.symbols[name] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
                 }
                 commentBuffer = [];
             }
         }
         // if (currentScope) {
-            // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
+        // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
         // }
     }
 }
