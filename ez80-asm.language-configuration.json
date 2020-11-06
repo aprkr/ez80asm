@@ -16,5 +16,5 @@
         ["'","'"],
         ["\"", "\""]
     ],
-    // "wordPattern": "\\w\\w\\w+" I would like autocomplete only to consider words longer than 3 chars, but that messes other things up
+    "wordPattern": "\\w\\w+"
 }

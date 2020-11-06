@@ -3,11 +3,11 @@
 	"displayName": "EZ80 Assembly",
 	"description": "EZ80 and Z80 Assembly syntax highlighting for Visual Studio Code",
 	"repository": {
-        "type": "git",
-        "url": "https://github.com/LiberalEater/ez80asm.git"
+		"type": "git",
+		"url": "https://github.com/LiberalEater/ez80asm.git"
 	},
 	"icon": "logo.png",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"license": "SEE LICENSE IN LICENSE.txt",
 	"author": "Alex Parker",
 	"publisher": "Alex-Parker",
@@ -18,7 +18,6 @@
 		"onLanguage:ez80-asm"
 	],
 	"main": "./out/extension.js",
-	
 	"categories": [
 		"Programming Languages"
 	],
@@ -32,8 +31,14 @@
 		"languages": [
 			{
 				"id": "ez80-asm",
-				"aliases": [ "EZ80 Assembly"],
-				"extensions": [".asm", ".z80", ".ez80"],
+				"aliases": [
+					"EZ80 Assembly"
+				],
+				"extensions": [
+					".asm",
+					".z80",
+					".ez80"
+				],
 				"configuration": "./ez80-asm.language-configuration.json"
 			}
 		],
@@ -49,19 +54,52 @@
 				"type": "object",
 				"title": "EZ80 Assembly",
 				"properties": {
-					"ez80asm.includeAllDocCommentNewlines": {
+					"ez80-asm.includeAllDocCommentNewlines": {
 						"description": "Makes every line of comments in a doc comment carry through a newline literal in the output Markdown.",
 						"type": "boolean",
 						"default": true
 					},
-					"ez80asm.includePath": {
+					"ez80-asm.includePath": {
 						"description": "Specifies folder paths to search for include files.",
 						"type": [
 							"array",
 							"string"
 						],
 						"default": []
+					},
+					"ez80-asm.enableSnippetSuggestions": {
+						"description": "Enable Instruction Snippets suggestions",
+						"type": "boolean",
+						"default": true
+					},
+					"ez80-asm.caseSnippets": {
+						"description": "Choose what case you want snippets to be",
+						"type": "string",
+						"default": "lower case",
+						"enum": ["UPPER CASE", "lower case"]
+					},
+					"ez80-asm.insertTabBetweenMnemonicsAndOperands": {
+						"description": "Choose if you want snippets to insert a tab between Mnemonics and operands",
+						"type": "boolean",
+						"default": false
+					},
+					"ez80-asm.alwaysUppercaseStrings": {
+						"description": "Specific strings you want always capitalized",
+						"type": [
+							"array",
+							"string"
+						],
+						"default": []
+					},
+					"ez80-asm.alwaysLowercaseStrings": {
+						"description": "Specific strings you want always lowercased",
+						"type": [
+							"array",
+							"string"
+						],
+						"default": []
 					}
+
 				}
 			}
 		]

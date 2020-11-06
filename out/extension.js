@@ -10,13 +10,16 @@ const semanticTokens = require("./semanticTokens.js");
 const tokenTypes = ['function','macro'];
 const tokenModifiers = ['declaration'];
 const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
+const completionProposer = require("./completion");
+
 
 function activate(context) {
-    const symbolDocumenter = new symbolDocumenter_1.ASMSymbolDocumenter();    
+    const symbolDocumenter = new symbolDocumenter_1.ASMSymbolDocumenter();
     context.subscriptions.push(vscode.languages.registerHoverProvider('ez80-asm', new hover.ASMHoverProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDefinitionProvider('ez80-asm', new definitionProvider_1.ASMDefinitionProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider('ez80-asm', new semanticTokens.ASMSemanticTokenProvider(symbolDocumenter), legend));
+    context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', new completionProposer.ASMCompletionProposer(symbolDocumenter)));
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated
