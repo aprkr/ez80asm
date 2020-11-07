@@ -3,50 +3,56 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 
 class ASMSemanticTokenProvider {
-    constructor(symbolDocumenter) {
+    constructor(symbolDocumenter, legend) {
         this.symbolDocumenter = symbolDocumenter;
+        this.legend = legend
     }
     provideDocumentSemanticTokens(document, token) {
         const wordregex = /\b\w+\b/g
         const commentregex = /.+;/g
-        const tokenTypes = ['function', 'variable', 'class'];
-        const tokenModifiers = ['declaration'];
-        const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
+        // const tokenTypes = ['function', 'variable', 'class', 'label'];
+        // const tokenModifiers = ['declaration'];
+        // const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
+        const legend = this.legend
         const symbols = this.symbolDocumenter.symbols(document);
         const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-        for (let linenumber = 0; linenumber < document.lineCount; linenumber++) {
-            const line = document.lineAt(linenumber);
-            let noncommentmatch = line.text.match(commentregex);
-            if (noncommentmatch || (!line.text.includes(";") && line.text.length > 0)) {
-                if (noncommentmatch) {
-                    noncommentmatch = noncommentmatch[0];
+        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+            const line = document.lineAt(lineNumber);
+            let nonCommentMatch = line.text.match(commentregex);
+            if (nonCommentMatch || (!line.text.includes(";") && line.text.length > 0)) {
+                if (nonCommentMatch) {
+                    nonCommentMatch = nonCommentMatch[0];
                 } else {
-                    noncommentmatch = line.text
+                    nonCommentMatch = line.text
                 }
-
-                const wordmatch = noncommentmatch.match(wordregex);
+                nonCommentMatch = nonCommentMatch.replace(/\".+\"/g, "")
+                const wordmatch = nonCommentMatch.match(wordregex);
                 if (wordmatch) {
-                    for (let j = 0; j < wordmatch.length; ++j) {
-                        if (symbols[wordmatch[j]]) {
-                            let startchar = noncommentmatch.indexOf(wordmatch[j]);
-                            let endchar = startchar + wordmatch[j].length
-                            const range = new vscode.Range(linenumber, startchar, linenumber, endchar)
+                    let char = 0;
+                    for (let index = 0; index < wordmatch.length; ++index) {
+                        if (symbols[wordmatch[index]]) {
+                            // let regexp = new RegExp("(\\b|\\s|^)"+wordmatch[index]+"(\\W|\\z|\\b)","g");
+                            // let startChar = nonCommentMatch.search(regexp);
+                            let startChar = nonCommentMatch.indexOf(wordmatch[index], char);
+                            let endChar = startChar + wordmatch[index].length
+                            const range = new vscode.Range(lineNumber, startChar, lineNumber, endChar)
                             // console.log(wordmatch[j]);
-                            if (symbols[wordmatch[j]].kind == vscode.SymbolKind.Method) {
-                                tokensBuilder.push(range, 'class');
-                            } else (symbols[wordmatch[j]].kind == vscode.SymbolKind.Constant) {
+                            if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Method) {
+                                tokensBuilder.push(range, 'function');
+                            } else if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Variable) {
                                 tokensBuilder.push(range, 'variable');
+                            } else if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Function) {
+                                tokensBuilder.push(range, 'label');
                             }
                         }
+                        char += wordmatch[index].length;
                     }
                 }
             }
         }
-
-        let SemanticTokens = tokensBuilder.build();
-        return SemanticTokens;
+            return tokensBuilder.build();
+        }
     }
-}
 
-exports.ASMSemanticTokenProvider = ASMSemanticTokenProvider;
+    exports.ASMSemanticTokenProvider = ASMSemanticTokenProvider;
 //# sourceMappingURL=definitionProvider.js.map

@@ -64,13 +64,13 @@ class ASMCompletionProposer {
                 const casingUpper = vscode.workspace.getConfiguration().get("ez80-asm.alwaysUppercaseStrings");
                 for (let i = 0; i < casingUpper.length; ++i) {
                     if (element.name.includes(casingUpper[i])) {
-                        element.name = element.name.toUpperCase();
+                        element.name = element.name.replace(casingUpper[i], casingUpper[i].toUpperCase());
                     }
                 }
                 const casingLower = vscode.workspace.getConfiguration().get("ez80-asm.alwaysLowercaseStrings");
                 for (let i = 0; i < casingLower.length; ++i) {
                     if (element.name.includes(casingLower[i])) {
-                        element.name = element.name.toLowerCase();
+                        element.name = element.name.replace(casingLower[i], casingLower[i].toLowerCase());
                     }
                 }
 
@@ -123,13 +123,17 @@ class ASMCompletionProposer {
 
 provideCompletionItems(document, position, token, context) {
     let output = [];
+    // let prefix = document.getText(new vscode.Range(position.with({ character: 0 }), position));
+    // if (context.triggerCharacter == ' ') {
+    //     console.log("HI")
+    // }
     // let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
     // let triggerWordLine = document.getText(triggerWordLineRange);
-    let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
-    let triggerWord = document.getText(triggerWordRange);
-    if (triggerWord.length < 2) {
-        return output
-    }
+    // let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
+    // let triggerWord = document.getText(triggerWordRange);
+    // if (triggerWord.length < 2) {
+    //     return output
+    // }
 
 
     // const stuff = "Hello";
@@ -142,6 +146,7 @@ provideCompletionItems(document, position, token, context) {
         this.instructionItems.forEach((item) => {
             output.push(item);
         })
+
     }
     const symbols = this.symbolDocumenter.symbols(document);
     for (const name in symbols) {
@@ -151,8 +156,8 @@ provideCompletionItems(document, position, token, context) {
             if (symbol.kind == vscode.SymbolKind.Method) {
                 kind = vscode.CompletionItemKind.Method;
             }
-            if (symbol.kind == vscode.SymbolKind.Constant) {
-                kind = vscode.CompletionItemKind.Constant;
+            if (symbol.kind == vscode.SymbolKind.Variable) {
+                kind = vscode.CompletionItemKind.Variable;
             }
             const item = new vscode.CompletionItem(name, kind);
             if (symbol.documentation) {

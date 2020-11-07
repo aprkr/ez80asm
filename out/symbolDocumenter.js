@@ -272,7 +272,7 @@ class ASMSymbolDocumenter {
                         const trimmed = line.text.replace(/[\s]+/, " ");
                         const withoutComment = trimmed.replace(/;.*$/, "");
                         commentBuffer.splice(0, 0, `\`${withoutComment}\`\n`);
-                        kind = vscode.SymbolKind.Constant
+                        kind = vscode.SymbolKind.Variable
                     }
                     if (commentBuffer.length > 0) {
                         documentation = commentBuffer.join("\n");

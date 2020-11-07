@@ -7,7 +7,7 @@ const definitionProvider_1 = require("./definitionProvider");
 const documentSymbolProvider = require("./documentSymbolProvider");
 const symbolDocumenter_1 = require("./symbolDocumenter");
 const semanticTokens = require("./semanticTokens.js");
-const tokenTypes = ['function','variable', 'class'];
+const tokenTypes = ['function','variable', 'class', 'label'];
 const tokenModifiers = ['declaration'];
 const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
 const completionProposer = require("./completion");
@@ -18,7 +18,7 @@ function activate(context) {
     context.subscriptions.push(vscode.languages.registerHoverProvider('ez80-asm', new hover.ASMHoverProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDefinitionProvider('ez80-asm', new definitionProvider_1.ASMDefinitionProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
-    context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider('ez80-asm', new semanticTokens.ASMSemanticTokenProvider(symbolDocumenter), legend));
+    context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider('ez80-asm', new semanticTokens.ASMSemanticTokenProvider(symbolDocumenter, legend), legend));
     context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', new completionProposer.ASMCompletionProposer(symbolDocumenter)));
 }
 exports.activate = activate;

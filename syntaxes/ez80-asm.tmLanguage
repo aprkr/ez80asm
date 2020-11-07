@@ -269,13 +269,14 @@
 		
 		End of include-->
 
-		<!--Catch-all for any other word-->
+		<!--Catch-all for any other word
 		<dict>
 			<key>name</key>
 			<string>variable.other.z80</string>
 			<key>match</key>
 			<string>\b\w+\b</string>
 		</dict>
+		-->
 
 		<!--Operators-->
 		<dict>
