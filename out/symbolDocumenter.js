@@ -257,7 +257,10 @@ class ASMSymbolDocumenter {
                         kind = vscode.SymbolKind.Method;
                     }
                     const name = declaration.replace(/:+/, "");
-                    const location = new vscode.Location(document.uri, line.range.start);
+                    const endChar = line.range.start.character + name.length;
+                    const endposition = new vscode.Position(lineNumber, endChar);
+                    const declarationrange = new vscode.Range(line.range.start, endposition)
+                    const location = new vscode.Location(document.uri, declarationrange);
                     // const isExported = declaration.indexOf("::") != -1;
                     // const isLocal = declaration.indexOf(".") != -1;
                     let documentation = undefined;
