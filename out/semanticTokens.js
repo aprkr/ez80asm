@@ -8,7 +8,7 @@ class ASMSemanticTokenProvider {
         this.legend = legend
     }
     provideDocumentSemanticTokens(document, token) {
-        const wordregex = /\b\w+\b/g
+        const wordregex = /\b\w+\.?\w+\b/g
         const commentregex = /.+;/g
         // const tokenTypes = ['function', 'variable', 'class', 'label'];
         // const tokenModifiers = ['declaration'];

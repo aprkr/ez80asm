@@ -108,7 +108,7 @@ class ASMCompletionProposer {
                 let insertText = element.name;
                 let tabIndex = 1;
                 insertText = insertText.replace("$", "\\$");
-                insertText = insertText.replace(/\b(r8|R8|rr|RR|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|d|D|rxy|RXY|b|B|cc|CC|cc'|CC')\b/g, (substring) => {
+                insertText = insertText.replace(/\b(r8|R8|r24|R24|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|d|D|rxy|RXY|bit|BIT|cc|CC)\b/g, (substring) => {
                     return `\${${tabIndex++}:${substring}}`;
                     // return `\${0:${substring}}`;
                 });
