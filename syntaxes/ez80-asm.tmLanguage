@@ -26,7 +26,7 @@
 			<string>;.*</string> <!--";" is the character to match, "." indicates any char (except newline), 
 										"*" means 0 or more times, "$" means to end of line (not needed but whatever)-->
 			<key>name</key>
-			<string>comment.line.z80</string>
+			<string>comment.line.ez80</string>
 		</dict>
 
 		<!--Labels-->
@@ -34,7 +34,7 @@
 			<key>match</key>
 			<string>^\S*:\s*</string> <!--If it ends in ": " it's a label-->
 			<key>name</key>
-			<string> entity.name.function.label.z80</string>
+			<string> entity.name.function.label.ez80</string>
 		</dict>
 
 		<!--Directives-->
@@ -42,21 +42,21 @@
 			<key>match</key>
 			<string>^#\S*</string> <!--""^" is anchor from beginning of line, #" is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
 			<key>name</key>
-			<string>keyword.control.directive.z80</string>
+			<string>keyword.control.directive.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
 			<string>\B\.\S*</string> <!--"\B" is to make standing by self, "." is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
 			<key>name</key>
-			<string>keyword.control.directive.period.z80</string>
+			<string>keyword.control.directive.period.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
 			<string>\b(DEFM|DEFB|DEFS|DEFW|ORG|EQU|ENT|DISP|defm|defb|defs|defw|org|equ|ent|disp|DB|db|DW|dw)\b</string>
 			<key>name</key>
-			<string>keyword.control.directive.z80</string>
+			<string>keyword.control.directive.ez80</string>
 		</dict>
 
 		<!--Conditionals (NZ, Z etc.)-->
@@ -64,7 +64,7 @@
 			<key>match</key>
 			<string>\b(Z|NZ|C|NC|P|M|PO|PE|z|nz|c|nc|p|m|po|pe)\b</string>
 			<key>name</key>
-			<string>keyword.conditionals.z80</string>
+			<string>keyword.conditionals.ez80</string>
 		</dict>
 		
 		<!-- Strings -->
@@ -76,7 +76,7 @@
 				<key>0</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.string.begin.z80</string>
+					<string>punctuation.definition.string.begin.ez80</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -86,34 +86,25 @@
 				<key>0</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.string.end.z80</string>
+					<string>punctuation.definition.string.end.ez80</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>string.quoted.double.z80</string>
+			<string>string.quoted.double.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
 			<string>\'.\'</string>
 			<key>name</key>
-			<string>string.quoted.single.z80</string>
+			<string>string.quoted.single.ez80</string>
 		</dict>
-
-		<!--Opcodes
-		<dict>
-			<key>match</key>			
-			<string>\b(ADC|ADD|AND|BIT|CALL|CCF|CP|CPD|CPDR|CPI|CPIR|CPL|DAA|DEC|DI|DJNZ|EI|EX|EXX|HALT|IM|IN|INC|IND|INDR|INI|INIR|JP|JR|LD|LDD|LDDR|LDI|LDIR|M|MLT|NC|NEG|NOP|NV|NZ|OR|OTDR|OTIR|OUT|OUTD|OUTI|POP|PUSH|RES|RET|RETI|RETN|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|RST|SBC|SCF|SET|SLA|SWAP|SRA|SRL|SUB|XOR|STOP|adc|add|and|bit|call|ccf|cp|cpd|cpdr|cpi|cpir|cpl|daa|dec|di|djnz|ei|ex|exx|halt|im|in|inc|ind|indr|ini|inir|jp|jr|ld|ldd|lddr|ldi|ldir|m|mlt|nc|neg|nop|nv|nz|or|otdr|otir|out|outd|outi|pop|push|res|ret|reti|retn|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|rst|sbc|scf|set|sla|swap|sra|srl|sub|xor|LDA|lda|stop)\b</string>
-			<key>name</key>
-			<string>keyword.control.opcodes.z80</string>
-		</dict>
-		-->
 
 		<dict>
 			<key>match</key>			
 			<string>\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL|adc|add|cp|daa|dec|inc|mlt|neg|sbc|sub|bit|res|set|cpd|cpdr|cpi|cpir|ldd|lddr|ldi|ldir|ex|exx|in|in0|ind|indr|indrx|ind2|ind2r|indm|indmr|ini|inir|inirx|ini2|ini2r|inim|inimr|otdm|otdmr|otdrx|otim|otimr|otirx|out|out0|outd|otdr|outd2|otd2r|outi|otir|outi2|oti2r|tstio|ld|lea|pea|pop|push|and|cpl|or|tst|xor|ccf|di|ei|halt|im|nop|rsmix|scf|slp|stmix|call|djnz|jp|jr|ret|reti|retn|rst|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|sla|sra|srl)\b</string>
 			<key>name</key>
-			<string>keyword.control.opcodes.z80</string>
+			<string>keyword.control.opcodes.ez80</string>
 		</dict>
 
 		<!--Opcode suffixes-->
@@ -122,7 +113,7 @@
 			<key>match</key>
 			<string>\.(SIS|SIL|LIS|LIL|sis|sil|lis|lil)</string>
 			<key>name</key>
-			<string>keyword.control.opcodes.suffixes.z80</string>
+			<string>keyword.control.opcodes.suffixes.ez80</string>
 		</dict>
 
 		<!--Numbers-->
@@ -130,21 +121,21 @@
 			<key>match</key>
 			<string>\b[0-9]+d?\b</string> <!--"+" means 1 or more-->
 			<key>name</key>
-			<string>constant.numeric.dec.z80</string>
+			<string>constant.numeric.dec.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
 			<string>(\$|0x)\h+\b</string> <!--starts with "$", 0x is optional, \h means hex digits-->
 			<key>name</key>
-			<string>constant.numeric.hex.z80</string>
+			<string>constant.numeric.hex.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
 			<string>\h+h\b</string> <!--\h means hex digits-->
 			<key>name</key>
-			<string>constant.numeric.hex.z80</string>
+			<string>constant.numeric.hex.ez80</string>
 		</dict>
 
 		<dict>
@@ -158,14 +149,14 @@
 			<key>match</key>
 			<string>\%[01]+\b</string> <!--starts with "%", only has 0 or 1 after-->
 			<key>name</key>
-			<string>constant.numeric.bin.z80</string>
+			<string>constant.numeric.bin.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
 			<string>[01]+b\b</string> 
 			<key>name</key>
-			<string>constant.numeric.bin.z80</string>
+			<string>constant.numeric.bin.ez80</string>
 		</dict>
 
 		<!--Registers-->
@@ -173,13 +164,13 @@
 			<key>match</key>
 			<string>\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB|a|b|c|d|e|f|h|l|i|r|ix|iy|ixh|ixl|iyh|iyl|af|bc|de|hl|pc|sp|af'|mb)\b</string>
 			<key>name</key>
-			<string>keyword.registers.z80</string>
+			<string>keyword.registers.ez80</string>
 		</dict>	
 
 		<!--Catch-all for any other word, remove this if you don't use semantic tokens-->
 		<dict>
 			<key>name</key>
-			<string>text.z80</string>
+			<string>text.ez80</string>
 			<key>match</key>
 			<string>\b\w+\b</string>
 		</dict>
@@ -190,11 +181,11 @@
 			<key>match</key>			
 			<string>[%\/*\-+]</string>
 			<key>name</key>
-			<string>keyword.operator.z80</string>
+			<string>keyword.operator.ez80</string>
 		</dict>
 
 	</array>
 	<key>scopeName</key>
-	<string>source.z80</string>
+	<string>source.ez80</string>
 </dict>
 </plist>

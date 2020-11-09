@@ -3,21 +3,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
-// const syntaxInfo_1 = require("./syntaxInfo");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\#?include[\W]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
-// const instructionRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.instructions.join("|")})\\b`, "i");
-// const keywordRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.preprocessorKeywords.join("|")})\\b`, "i");
-class ScopeDescriptor {
-    constructor(start, end) {
-        this.start = start;
-        this.end = end;
-    }
-}
+// class ScopeDescriptor {
+//     constructor(start, end) {
+//         this.start = start;
+//         this.end = end;
+//     }
+// }
 class SymbolDescriptor {
     constructor(location, kind, documentation) {
         this.location = location;

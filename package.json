@@ -45,7 +45,7 @@
 		"grammars": [
 			{
 				"language": "ez80-asm",
-				"scopeName": "source.z80",
+				"scopeName": "source.ez80",
 				"path": "./syntaxes/ez80-asm.tmLanguage"
 			}
 		],

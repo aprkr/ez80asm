@@ -77,7 +77,6 @@ class ASMCompletionProposer {
                 }
 
                 const item = new vscode.CompletionItem(element.name, vscode.CompletionItemKind.Snippet);
-                // const nameLine = `\`${element.name}\``;
                 const descriptionLine = element.description;
                 const cyclesLine = `**Cycles:** ${element.cycles} **Bytes:** ${element.bytes}`;
                 const flagsLine = `**Flags:**`;
@@ -118,7 +117,6 @@ class ASMCompletionProposer {
                     insertText = insertText.replace("${1:", "${0:");
                 }
                 if (insertText != element.name) {
-                    // console.log(insertText);
                     item.insertText = new vscode.SnippetString(insertText);
                 }
                 this.instructionItems.push(item);
@@ -129,9 +127,6 @@ class ASMCompletionProposer {
 provideCompletionItems(document, position, token, context) {
     let output = [];
     // let prefix = document.getText(new vscode.Range(position.with({ character: 0 }), position));
-    // if (context.triggerCharacter == ' ') {
-    //     console.log("HI")
-    // }
     // let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
     // let triggerWordLine = document.getText(triggerWordLineRange);
     // let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
@@ -139,14 +134,6 @@ provideCompletionItems(document, position, token, context) {
     // if (triggerWord.length < 2) {
     //     return output
     // }
-
-
-    // const stuff = "Hello";
-    // const duh = new vscode.CompletionItem(stuff, vscode.CompletionItemKind.Event);
-    // const what = new vscode.SnippetString("${TM_FILENAME/(.*)/${1}/}");
-    // const um = new vscode.SnippetString("adc a, ${0:n8}");
-    // duh.insertText = um;
-    // output.push(duh);
     if (vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
         this.instructionItems.forEach((item) => {
             output.push(item);
