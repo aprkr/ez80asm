@@ -33,10 +33,9 @@ class ASMSemanticTokenProvider {
                         if (symbols[wordmatch[index]]) {
                             // let regexp = new RegExp("(\\b|\\s|^)"+wordmatch[index]+"(\\W|\\z|\\b)","g");
                             // let startChar = nonCommentMatch.search(regexp);
-                            let startChar = nonCommentMatch.indexOf(wordmatch[index], char);
-                            let endChar = startChar + wordmatch[index].length
+                            const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
+                            const endChar = startChar + wordmatch[index].length
                             const range = new vscode.Range(lineNumber, startChar, lineNumber, endChar)
-                            // console.log(wordmatch[j]);
                             if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Method) {
                                 tokensBuilder.push(range, 'function');
                             } else if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Variable) {

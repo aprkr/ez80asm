@@ -30,8 +30,6 @@ class ASMHoverProvider {
             }
             if (numberValue !== undefined) {
                 return new vscode.Hover(`\`${numberValue}\`\n\n\`\$${numberValue.toString(16)}\`\n\n\`%${numberValue.toString(2)}\``, range);
-            } else {
-                // return new vscode.Hover("LOLOLOL", range);
             }
         }
         return null;

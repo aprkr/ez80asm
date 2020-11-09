@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
-const registerRegex = /\b\[?(a|f|b|c|d|e|h|l|af|bc|de|hl|hli|hld|sp|pc)\]?\b/i;
+const registerRegex = /\b\[?(a|f|b|c|d|e|h|l|af|bc|de|hl|mb|sp|pc)\]?\b/i;
 const itemSplitRegex = /,? /;
 const hexRegex = /(\$[0-9a-f]+)/i;
 const includeRegex = /^(?:[\w\.]+[:]{0,2})?\s*include\s+\"?/i;
@@ -34,7 +34,8 @@ class ASMCompletionProposer {
                             "z": entry.flags.z || "",
                             "n": entry.flags.n || "",
                             "h": entry.flags.h || "",
-                            "c": entry.flags.c || ""
+                            "c": entry.flags.c || "",
+                            "pv": entry.flags.pv || ""
                         }
                     })
                 } else {
@@ -47,7 +48,8 @@ class ASMCompletionProposer {
                             "z": entry.flags.z || "",
                             "n": entry.flags.n || "",
                             "h": entry.flags.h || "",
-                            "c": entry.flags.c || ""
+                            "c": entry.flags.c || "",
+                            "pv": entry.flags.pv || ""
                         }
                     })
                 }
@@ -92,6 +94,9 @@ class ASMCompletionProposer {
                 if ((element.flags.c || "").length > 0) {
                     flagLines.push(`\\- C: ${element.flags.c}`);
                 }
+                if ((element.flags.pv || "").length > 0) {
+                    flagLines.push(`\\- P/V: ${element.flags.pv}`);
+                }
                 const lines = [descriptionLine, "", cyclesLine];
                 if (flagLines.length > 0) {
                     lines.push(flagsLine);
@@ -103,15 +108,15 @@ class ASMCompletionProposer {
                 let insertText = element.name;
                 let tabIndex = 1;
                 insertText = insertText.replace("$", "\\$");
-                insertText = insertText.replace(/\b(n8|n24|r8|r24|N8|N24|R8|R24)\b/g, (substring) => {
-                    return `\${${tabIndex--}:${substring}}`;
+                insertText = insertText.replace(/\b(r8|R8|rr|RR|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|d|D|rxy|RXY|b|B|cc|CC|cc'|CC')\b/g, (substring) => {
+                    return `\${${tabIndex++}:${substring}}`;
                     // return `\${0:${substring}}`;
                 });
                 // If there's only one completion item, set index to 0 for a better
                 // experience.
-                // if (tabIndex == 2) {
-                //     insertText = insertText.replace("${1:", "${0:");
-                // }
+                if (tabIndex == 2) {
+                    insertText = insertText.replace("${1:", "${0:");
+                }
                 if (insertText != element.name) {
                     // console.log(insertText);
                     item.insertText = new vscode.SnippetString(insertText);
