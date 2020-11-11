@@ -3,21 +3,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
-// const syntaxInfo_1 = require("./syntaxInfo");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\#?include[\W]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
-// const instructionRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.instructions.join("|")})\\b`, "i");
-// const keywordRegex = new RegExp(`^(${syntaxInfo_1.syntaxInfo.preprocessorKeywords.join("|")})\\b`, "i");
-class ScopeDescriptor {
-    constructor(start, end) {
-        this.start = start;
-        this.end = end;
-    }
-}
+// class ScopeDescriptor {
+//     constructor(start, end) {
+//         this.start = start;
+//         this.end = end;
+//     }
+// }
 class SymbolDescriptor {
     constructor(location, kind, documentation) {
         this.location = location;
@@ -257,7 +254,10 @@ class ASMSymbolDocumenter {
                         kind = vscode.SymbolKind.Method;
                     }
                     const name = declaration.replace(/:+/, "");
-                    const location = new vscode.Location(document.uri, line.range.start);
+                    const endChar = line.range.start.character + name.length;
+                    const endposition = new vscode.Position(lineNumber, endChar);
+                    const declarationrange = new vscode.Range(line.range.start, endposition)
+                    const location = new vscode.Location(document.uri, declarationrange);
                     // const isExported = declaration.indexOf("::") != -1;
                     // const isLocal = declaration.indexOf(".") != -1;
                     let documentation = undefined;
@@ -269,7 +269,7 @@ class ASMSymbolDocumenter {
                         const trimmed = line.text.replace(/[\s]+/, " ");
                         const withoutComment = trimmed.replace(/;.*$/, "");
                         commentBuffer.splice(0, 0, `\`${withoutComment}\`\n`);
-                        kind = vscode.SymbolKind.Constant
+                        kind = vscode.SymbolKind.Variable
                     }
                     if (commentBuffer.length > 0) {
                         documentation = commentBuffer.join("\n");

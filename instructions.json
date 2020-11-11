@@ -1,1071 +1,2994 @@
 {
-  "instructions" : [
+  "instructions": [
     {
-      "name" : "adc a, r8",
-      "description" : "`a` = `a` + r8 + carry",
-      "optionalA" : true,
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
+      "name": "adc a, (hl)",
+      "description": "`a = a + (hl) + carry`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
       }
     },
     {
-      "name" : "adc a, [hl]",
-      "description" : "`a` = `a` + [`hl`] + carry",
-      "optionalA" : true,
+      "name": "adc a, ir",
+      "description": "`a = a + ir + carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "adc a, (ix/y+d)",
+      "description": "`a = a + (ix/y+d) + carry`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "adc a, n",
+      "description": "`a = a + n + carry`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "adc a, r8",
+      "description": "`a = a + r8 + carry`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "adc hl, r24",
+      "description": "`hl = hl + r24 + carry`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from bit MSB",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "adc hl, sp",
+      "description": "`hl = hl + sp + carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from bit MSB",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "add a, (hl)",
+      "description": "`a = a + (hl)`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "add a, ir",
+      "description": "`a = a + ir`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "add a, (ix/y+d)",
+      "description": "`a = a + (ix/y+d)`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "add a, n",
+      "description": "`a = a + n`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "add a, r8",
+      "description": "`a = a + r8`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Set if carry from bit 7",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "add hl, r24",
+      "description": "`hl = hl + r24`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from MSB",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "add hl, sp",
+      "description": "`hl = hl + sp`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from bit MSB",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "add ix/y, rxy",
+      "description": "`ix/y = ix/y + rxy`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from bit MSB",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "add ix/y, sp",
+      "description": "`ix/y = ix/y + sp`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from MSB",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "and a, (hl)",
+      "description": "`a = a AND (hl)`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Set if parity is even",
+        "pv": "Reset"
+      }
+    },
+    {
+      "name": "and a, ir",
+      "description": "`a = a AND ir`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Set if parity is even",
+        "pv": "Reset"
+      }
+    },
+    {
+      "name": "and a, (ix/y+d)",
+      "description": "`a = a AND (ix/y+d)`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Set if parity is even",
+        "pv": "Reset"
+      }
+    },
+    {
+      "name": "and a, n",
+      "description": "`a = a AND n`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Set if parity is even",
+        "pv": "Reset"
+      }
+    },
+    {
+      "name": "and a, r8",
+      "description": "`a = a AND r8`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Set if parity is even",
+        "pv": "Reset"
+      }
+    },
+    {
+      "name": "bit bit, (hl)",
+      "description": "`Z = ~(hl)[bit]`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bit b is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Not affected",
+        "pv": "Undefined"
+      }
+    },
+    {
+      "name": "bit bit, (ix/y+d)",
+      "description": "`Z = ~(ix/y+d)[bit]`",
+      "cycles": 5,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if bit b is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Not affected",
+        "pv": "Undefined"
+      }
+    },
+    {
+      "name": "bit b, r8",
+      "description": "`Z = ~r8[bit]`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bit b is 0",
+        "n": "Reset",
+        "h": "Set",
+        "c": "Not affected",
+        "pv": "Undefined"
+      }
+    },
+    {
+      "name": "call cc, mmn",
+      "description": "If cc is true, push return address and set pc to mmn",
+      "cycles": "4/7",
+      "bytes": 4,
+      "flags": {}
+    },
+    {
+      "name": "call mmn",
+      "description": "Push return address and set pc to mmn",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {}
+    },
+    {
+      "name": "ccf",
+      "description": "`C = ~C`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Previous carry",
+        "c": "Set if carry was 0",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "cp a, (hl)",
+      "description": "`a - (hl)`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if a = (hl)",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "cp a, ir",
+      "description": "`a - ir`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if a = ir",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "cp a, (ix/y+d)",
+      "description": "`a - (ix/y+d)`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if a = (ix/y+d)",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "cp a, n",
+      "description": "`a - n`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if a = n",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "cp a, r8",
+      "description": "`a - r8`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if a = r8",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "cpd",
+      "description": "`a - (hl), hl = hl - 1, bc = bc - 1`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if a = (hl)",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "cpdr",
+      "description": "`a - (hl), hl = hl - 1, bc = bc - 1` repeat until a=(hl) or bc = 0",
+      "cycles": "1 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if a = (hl)",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "cpi",
+      "description": "`a - (hl), hl = hl + 1, bc = bc - 1`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if a = (hl)",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "cpir",
+      "description": "`a - (hl), hl = hl + 1, bc = bc - 1` repeat until a=(hl) or bc = 0",
+      "cycles": "1 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if a = (hl)",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "cpl",
+      "description": "`a = ~a`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Set",
+        "h": "Set",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "daa",
+      "description": "Decimal adjust A, see full documentation",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Not affected",
+        "h": "See documentation",
+        "c": "See documentation",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "dec (hl)",
+      "description": "`(hl) = (hl) - 1`",
+      "cycles": 4,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if operand was 80h"
+      }
+    },
+    {
+      "name": "dec ir",
+      "description": "`ir = ir - 1`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if operand was 80h"
+      }
+    },
+    {
+      "name": "dec ix/y",
+      "description": "`ix/y = ix/y - 1`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "dec (ix/y+d)",
+      "description": "`(ix/y+d) = (ix/y+d) - 1`",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if operand was 80h"
+      }
+    },
+    {
+      "name": "dec r8",
+      "description": "`r8 = r8 - 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Not affected",
+        "pv": "Set if operand was 80h"
+      }
+    },
+    {
+      "name": "dec r24",
+      "description": "`r24 = r24 - 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "dec sp",
+      "description": "`sp = sp - 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "di",
+      "description": "Disable interrupts",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "djnz mmn",
+      "description": "`b = b - 1` jump to mmn, repeat until b = 0",
+      "cycles": "2/4",
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ei",
+      "description": "enable interrupts",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ex af, af'",
+      "description": "`af <-> af'`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Taken from f'",
+        "n": "Taken from f'",
+        "h": "Taken from f'",
+        "c": "Taken from f'",
+        "pv": "Taken from f'"
+      }
+    },
+    {
+      "name": "ex de, hl",
+      "description": "`de <-> hl`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ex (sp), hl",
+      "description": "`(sp) <-> hl`",
+      "cycles": 7,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ex (sp), ix/y",
+      "description": "`(sp) <-> ix/y`",
+      "cycles": 8,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "exx",
+      "description": "`bc <-> bc',de <-> de',hl <-> hl'`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "halt",
+      "description": "Executes NOP until interrupt or reset",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "im n",
+      "description": "Sets interrupt mode (0,1, or 2)",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "in a, (n)",
+      "description": "`a = ({uu, a, n})`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "in r8, (bc)",
+      "description": "`r8 = ({uu, b, c})`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "in0 r8, (n)",
+      "description": "`r8 = ({uu, 0, n})`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "inc (hl)",
+      "description": "`(hl) = (hl) + 1`",
+      "cycles": 4,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Not affected",
+        "pv": "Set if operand was 7Fh"
+      }
+    },
+    {
+      "name": "inc ir",
+      "description": "`ir = ir + 1`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Not affected",
+        "pv": "Set if operand was 7Fh"
+      }
+    },
+    {
+      "name": "inc ix/y",
+      "description": "`ix/y = ix/y + 1`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "inc (ix/y+d)",
+      "description": "`(ix/y+d) = (ix/y+d) + 1`",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Not affected",
+        "pv": "Set if operand was 7Fh"
+      }
+    },
+    {
+      "name": "inc r8",
+      "description": "`r8 = r8 + 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Set if carry from bit 3",
+        "c": "Not affected",
+        "pv": "Set if operand was 7Fh"
+      }
+    },
+    {
+      "name": "inc r24",
+      "description": "`r24 = r24 + 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "inc sp",
+      "description": "`sp = sp + 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ind",
+      "description": "`(hl) = ({uu, b, c}), b = b - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ind2",
+      "description": "`(hl) = ({uu, b, c}), b = b - 1, c = c - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ind2r",
+      "description": "`(hl) = ({uu, d, e}), bc = bc - 1, de = de - 1, hl = hl - 1` repeat until bc = 0",
+      "cycles": "2 * bc",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "indm",
+      "description": "`(hl) = ({uu, 0, c}), b = b - 1, c = c - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Undefined",
+        "c": "Undefined",
+        "pv": "Undefined"
+      }
+    },
+    {
+      "name": "indmr",
+      "description": "`(hl) = ({uu, 0, c}), b = b - 1, c = c - 1, hl = hl - 1` repeat until b = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "indr",
+      "description": "`(hl) = ({uu, b, c}), b = b - 1, hl = hl - 1` repeat until b = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "indrx",
+      "description": "`(hl) = ({uu, d, e}), bc = bc - 1, hl = hl - 1` repeat until bc = 0",
+      "cycles": "2 * bc",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if bit 7 of data is 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ini",
+      "description": "`(hl) = ({uu, b, c}), b = b - 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ini2",
+      "description": "`(hl) = ({uu, b, c}), b = b - 1, c = c + 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ini2r",
+      "description": "`(hl) = ({uu, d, e}), bc = bc - 1, de = de + 1, hl = hl + 1` repeat until bc = 0",
+      "cycles": "2 * bc",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "inim",
+      "description": "`(hl) = ({uu, 0, c}), b = b - 1, c = c + 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Undefined",
+        "c": "Undefined",
+        "pv": "Undefined"
+      }
+    },
+    {
+      "name": "inimr",
+      "description": "`(hl) = ({uu, 0, c}), b = b - 1, c = c + 1, hl = hl + 1` repeat until b = 0",
+      "cycles": "2 * b?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "inir",
+      "description": "`(hl) = ({uu, b, c}), b = b - 1, hl = hl + 1` repeat until b = 0",
+      "cycles": "2 * b?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "inirx",
+      "description": "`(hl) = ({uu, d, e}), bc = bc - 1, hl = hl + 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "jp cc, mmn",
+      "description": "`pc = mmn` if cc is true",
+      "cycles": "4/5",
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "jp (hl)",
+      "description": "`pc = hl`",
+      "cycles": 3,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "jp (ix/y)",
+      "description": "`pc = ix/y`",
+      "cycles": 4,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "jp mmn",
+      "description": "`pc = mmn`",
+      "cycles": 5,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "jr cc, mmn",
+      "description": "`pc = pc + d` if cc' is true, d is a range from -128 to 127",
+      "cycles": "2/3",
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "jr mmn",
+      "description": "`pc = pc + d` d is a range from -128 to 127",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld a, i",
+      "description": "`a = i`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if i is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Contains contents of ief2"
+      }
+    },
+    {
+      "name": "ld a, (ix/y+d)",
+      "description": "`a = (ix/y+d)`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld a, mb",
+      "description": "`a = mb`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld a, (mmn)",
+      "description": "`a = (Mmn)`",
+      "cycles": 4,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld a, R",
+      "description": "`a = R`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if R is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Contains contents of ief2"
+      }
+    },
+    {
+      "name": "ld a, (r24)",
+      "description": "`a = (r24)`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld hl, i",
+      "description": "`hl = i`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if i is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Contains contents of ief2"
+      }
+    },
+    {
+      "name": "ld (hl), ix/y",
+      "description": "`(hl) = ix/y`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (hl), n",
+      "description": "`(hl) = n`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (hl), r8",
+      "description": "`(hl) = r8`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (hl), r24",
+      "description": "`(hl) = r24`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld i, hl",
+      "description": "`i = hl`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld i, a",
+      "description": "`i = a`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ir, ir",
+      "description": "`ir = ir`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ir, n",
+      "description": "`ir = n`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ir, r",
+      "description": "`ir = r`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ix/y, (hl)",
+      "description": "`ix/y = (hl)`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ix/y, (ix/y+d)",
+      "description": "`ix/y = (ix/y+d)`",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ix/y, mmn",
+      "description": "`ix/y = Mmn`",
+      "cycles": 4,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld ix/y, (mmn)",
+      "description": "`ix/y = (mmn)`",
+      "cycles": 8,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (ix/y+d), ix/y",
+      "description": "`(ix/y+d) = ix/y`",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (ix/y+d), n",
+      "description": "`(ix/y+d) = n`",
+      "cycles": 5,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (ix/y+d), r8",
+      "description": "`(ix/y+d) = r8`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (ix/y+d), r24",
+      "description": "`(ix/y+d) = r24`",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld mb, a",
+      "description": "`mb = a`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (mmn), a",
+      "description": "`(Mmn) = a`",
+      "cycles": 5,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (mmn), ix/y",
+      "description": "`(Mmn) = ix/y`",
+      "cycles": 8,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (mmn), r24",
+      "description": "`(Mmn) = r24`",
+      "cycles": 8,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (mmn), sp",
+      "description": "`(Mmn) = sp`",
+      "cycles": 8,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r, a",
+      "description": "`R = a`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r8, (hl)",
+      "description": "`r8 = (hl)`",
+      "cycles": 2,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r8, ir",
+      "description": "`r8 = ir`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r8, (ix/y+d)",
+      "description": "`r8 = (ix/y+d)`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r8, n",
+      "description": "`r8 = n`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r8, r8",
+      "description": "`r8 = r8`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r24, (hl)",
+      "description": "`r24 = (hl)`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r24, (ix/y+d)",
+      "description": "`r24 = (ix/y6d)`",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r24, mmn",
+      "description": "`r24 = Mmn`",
+      "cycles": 4,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld r24, (mmn)",
+      "description": "`r24 = (Mmn)`",
+      "cycles": 8,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld (r24), a",
+      "description": "`(r24) = a`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld sp, hl",
+      "description": "`sp = hl`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld sp, ix/y",
+      "description": "`sp = ix/y`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld sp, mmn",
+      "description": "`sp = Mmn`",
+      "cycles": 4,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ld sp, (mmn)",
+      "description": "`sp = (Mmn)`",
+      "cycles": 6,
+      "bytes": 5,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ldd",
+      "description": "`(de) = (hl), bc = bc - 1, de = de - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "lddr",
+      "description": "`(de) = (hl), bc = bc - 1, de = de - 1, hl = hl - 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "ldi",
+      "description": "`(de) = (hl), bc = bc - 1, de = de + 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "ldir",
+      "description": "`(de) = (hl), bc = bc - 1, de = de + 1, hl = hl + 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if bc - 1 != 0"
+      }
+    },
+    {
+      "name": "lea ix/y, ix/y+d",
+      "description": "`ix/y = ix+d`",
+      "cycles": 3,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "lea r24, ix/y+d",
+      "description": "`r24 = ix+d`",
+      "cycles": 3,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "mlt r24",
+      "description": "`r24 = r24[15:8] * r24[7:0]`",
+      "cycles": 6,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "mlt sp",
+      "description": "`sp = sp[15:8] * sp[7:0]`",
+      "cycles": 6,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "neg",
+      "description": "`a = 0 - a`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if accumulator was not 0",
+        "pv": "Set if operand was 80h"
+      }
+    },
+    {
+      "name": "nop",
+      "description": "No operation",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "or a, (hl)",
+      "description": "`a = a OR (hl)`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "or a, ir",
+      "description": "`a = a OR ir`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "or a, (ix/y+d)",
+      "description": "`a = a OR (ix/y+d)`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "or a, n",
+      "description": "`a = a OR n`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "or a, r8",
+      "description": "`a = a OR r8`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "otd2r",
+      "description": "`({UU, d, e}) = (hl), bc = bc - 1, de = de - 1, hl = hl - 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otdm",
+      "description": "`({UU, 0, c}) = (hl), b = b - 1, c = c - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otdmr",
+      "description": "`({UU, 0, c}) = (hl), b = b - 1, c = c - 1, hl = hl - 1` repeat until b = 0",
+      "cycles": "2 * b?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Undefined",
+        "c": "Undefined",
+        "pv": "Undefined"
+      }
+    },
+    {
+      "name": "otdr",
+      "description": "`({UU, b, c}) = (hl), b = b - 1, hl = hl - 1` repeat until b = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otdrx",
+      "description": "`({UU, d, e}) = (hl), bc = bc - 1, hl = hl - 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otd2r",
+      "description": "`({UU, d, e}) = (hl), bc = bc - 1, de = de + 1, hl = hl + 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otim",
+      "description": "`({UU, 0, c}) = (hl), b = b - 1, c = c + 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otimr",
+      "description": "`({UU, 0, c}) = (hl), b = b - 1, c = c + 1, hl = hl + 1` repeat until b = 0",
+      "cycles": "2 * b?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otir",
+      "description": "`({UU, b, c}) = (hl), b = b - 1, hl = hl + 1` repeat until b = 0",
+      "cycles": "2 * b?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "otirx",
+      "description": "`({UU, d, e}) = (hl), bc = bc - 1, hl = hl - 1` repeat until bc = 0",
+      "cycles": "2 * bc?",
+      "bytes": 2,
+      "flags": {
+        "z": "Set if bc - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "out (bc), r8",
+      "description": "`({UU, b, c}) = r8",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "out (n), a",
+      "description": "`({UU, a, n}) = a",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "out0 (n), r8",
+      "description": "`({UU, 0, n}) = r8",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "outd",
+      "description": "`({UU, b, c}) = (hl), b = b - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "outd2",
+      "description": "`({UU, b, c}) = (hl), b = b - 1, c = c - 1, hl = hl - 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "outi",
+      "description": "`({UU, b, c}) = (hl), b = b - 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "outi2",
+      "description": "`({UU, b, c}) = (hl), b = b - 1, c = c + 1, hl = hl + 1`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if b - 1 = 0",
+        "n": "Set if msb of data is logical 1",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "pea ix/y+d",
+      "description": "Pushes `ix/y+d` onto the stack",
+      "cycles": 6,
+      "bytes": 3,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "pop af",
+      "description": "Pops top of stack into `af`",
+      "cycles": 4,
+      "bytes": 1,
+      "flags": {
+        "z": "Taken from new f",
+        "n": "Taken from new f",
+        "h": "Taken from new f",
+        "c": "Taken from new f",
+        "pv": "Taken from new f"
+      }
+    },
+    {
+      "name": "pop ix/y",
+      "description": "Pops top of stack into `ix/y`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "pop r24",
+      "description": "Pops top of stack into `r24`",
+      "cycles": 4,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "push af",
+      "description": "Pushes `af` to top of stack",
+      "cycles": 4,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "push ix/y",
+      "description": "Pushes `ix/y` to top of stack",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "push r24",
+      "description": "Pushes `r24` to top of stack",
+      "cycles": 4,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "res bit, (hl)",
+      "description": "`(hl)[bit] = 0`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "res bit, (ix/y+d)",
+      "description": "`(ix/y+d)[bit] = 0`",
+      "cycles": 5,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "res bit, r8",
+      "description": "`r8[bit] = 0`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ret",
+      "description": "`pc = (sp)`",
+      "cycles": 6,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "ret cc",
+      "description": "`pc = (sp)` if cc is true",
+      "cycles": "2/7",
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "reti",
+      "description": "`pc = (sp)`",
+      "cycles": 7,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "retn",
+      "description": "`pc = (sp), ief1 = ief2`",
+      "cycles": 7,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "rl (hl)",
+      "description": "rotate left, carry to bit 0, bit 7 to carry",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rl (ix/y+d)",
+      "description": "rotate left, carry to bit 0, bit 7 to carry",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rl r8",
+      "description": "rotate left, carry to bit 0, bit 7 to carry",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rla",
+      "description": "rotate left accumulator, carry to bit 0, bit 7 to carry",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "rlc (hl)",
+      "description": "rotate left with carry, bit 7 to carry and bit 0",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rlc (ix/y+d)",
+      "description": "rotate left with carry, bit 7 to carry and bit 0",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rlc r8",
+      "description": "rotate left with carry, bit 7 to carry and bit 0",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rlca",
+      "description": "rotate left with carry-accumulator, bit 7 to carry and bit 0",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "rld",
+      "description": "`a[3:0] = (hl)[7:4], (hl)[7:4] = (hl)[3:0], (hl)[3:0} = a[3:0]`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rr (hl)",
+      "description": "rotate right, carry to bit 7, bit 0 to carry",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rr (ix/y+d)",
+      "description": "rotate right, carry to bit 7, bit 0 to carry",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rr r8",
+      "description": "rotate right, carry to bit 7, bit 0 to carry",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rra",
+      "description": "rotate right accumulator, carry to bit 7, bit 0 to carry",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rrc (hl)",
+      "description": "rotate right carry, bit 0 to carry and bit 7",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rrc (ix/y+d)",
+      "description": "rotate right carry, bit 0 to carry and bit 7",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rrc r8",
+      "description": "rotate right carry, bit 0 to carry and bit 7",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rrca",
+      "description": "rotate right carry-accumulator, bit 0 to carry and bit 7",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rrd",
+      "description": "`a[3:0] = (hl)[3:0], (hl)[7:4] = a[3:0], (hl)[3:0] = (hl)[7:4]`",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Not affected",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "rsmix",
+      "description": "`madl = 0`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "rst n",
+      "description": "`(sp) = pc, pc = {0, 0, n}`",
+      "cycles": 6,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "sbc a, (hl)",
+      "description": "`a = a - (hl) - carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "sbc a, ir",
+      "description": "`a = a - ir - carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "sbc a, (ix/y+d)",
+      "description": "`a = a - (ix/y+d) - carry`",
+      "cycles": 4,
+      "bytes": 3,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "sbc a, n",
+      "description": "`a = a - n - carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "sbc a, r8",
+      "description": "`a = a - r8 - carry`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 4",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "sbc hl, r24",
+      "description": "`hl = hl - r24 - carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 12",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "sbc hl, sp",
+      "description": "`hl = hl - sp - carry`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Set",
+        "h": "Set if borrow from bit 12",
+        "c": "Set if borrow",
+        "pv": "Set if overflow"
+      }
+    },
+    {
+      "name": "scf",
+      "description": "`C = 1`",
+      "cycles": 1,
+      "bytes": 1,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Set",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "set bit, (hl)",
+      "description": "`(hl)[bit] = 1`",
+      "cycles": 3,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "set bit, (ix/y+d)",
+      "description": "`(ix/y+d)[bit] = 1`",
+      "cycles": 5,
+      "bytes": 4,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "set bit, r8",
+      "description": "`r8[bit] = 1`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "sla (hl)",
+      "description": "Shift left arithmetic, bit 7 to carry, 0 to bit 0",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "sla (ix/y+d)",
+      "description": "Shift left arithmetic, bit 7 to carry, 0 to bit 0",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "sla r8",
+      "description": "Shift left arithmetic, bit 7 to carry, 0 to bit 0",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 7",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "slp",
+      "description": "Sleep",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Not affected",
+        "h": "Not affected",
+        "c": "Not affected",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "sra (hl)",
+      "description": "Shift right arithmetic, bit 7 to bit 7, bit 0 to carry",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "sra (ix/y+d)",
+      "description": "Shift right arithmetic, bit 7 to bit 7, bit 0 to carry",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "sra r8",
+      "description": "Shift right arithmetic, bit 7 to bit 7, bit 0 to carry",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "srl (hl)",
+      "description": "Shift right logical, 0 to bit 7, bit 0 to carry",
+      "cycles": 5,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "srl (ix/y+d)",
+      "description": "Shift right logical, 0 to bit 7, bit 0 to carry",
+      "cycles": 7,
+      "bytes": 4,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name": "srl r8",
+      "description": "Shift right logical, 0 to bit 7, bit 0 to carry",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Set if result is 0",
+        "n": "Reset",
+        "h": "Reset",
+        "c": "Becomes bit 0",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name" : "stmix",
+      "description" : "`madl = 1`",
       "cycles" : 2,
-      "bytes" : 1,
+      "bytes" : 2,
       "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
+        "z" : "Not affected",
+        "n" : "Not affected",
+        "h" : "Not affected",
+        "c" : "Not affected",
+        "pv": "Not affected"
       }
-    },
+    },  
     {
-      "name" : "adc a, n8",
-      "description" : "`a` = `a` + n8 + carry",
-      "optionalA" : true,
+      "name" : "sub a, (hl)",
+      "description" : "`a = a - (hl)`",
       "cycles" : 2,
       "bytes" : 2,
       "flags" : {
         "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
+        "n" : "Set",
+        "h" : "Set if borrow from bit 4",
+        "c" : "Set if borrow",
+        "pv": "Set if overflow"
       }
     },
     {
-      "name" : "add a, r8",
-      "description" : "`a` = `a` + r8",
-      "optionalA" : true,
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
-      }
-    },
-    {
-      "name" : "add a, [hl]",
-      "description" : "`a` = `a` + [`hl`]",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
-      }
-    },
-    {
-      "name" : "add a, n8",
-      "description" : "`a` = `a` + n8",
-      "optionalA" : true,
+      "name" : "sub a, ir",
+      "description" : "`a = a - ir`",
       "cycles" : 2,
       "bytes" : 2,
       "flags" : {
         "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
+        "n" : "Set",
+        "h" : "Set if borrow from bit 4",
+        "c" : "Set if borrow",
+        "pv": "Set if overflow"
       }
     },
     {
-      "name" : "add hl, r16",
-      "description" : "`hl` = `hl` + r16",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "n" : "0",
-        "h" : "Set if overflow from bit 11",
-        "c" : "Set if overflow from bit 15"
-      }
-    },
-    {
-      "name" : "add hl, sp",
-      "description" : "`hl` = `hl` + sp",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "n" : "0",
-        "h" : "Set if overflow from bit 11",
-        "c" : "Set if overflow from bit 15"
-      }
-    },
-    {
-      "name" : "add sp, e8",
-      "description" : "`sp` = `sp` + e8",
+      "name" : "sub a, (ix/y+d)",
+      "description" : "`a = a - (ix/y+d)`",
       "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
-      }
-    },
-    {
-      "name" : "and a, r8",
-      "description" : "`a` = `a` & r8",
-      "optionalA" : true,
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "1",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "and a, [hl]",
-      "description" : "`a` = `a` & [hl]",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "1",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "and a, n8",
-      "description" : "`a` = `a` & n8",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "1",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "bit u3, r8",
-      "description" : "Sets Z if bit u3 in r8 is 0",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if selected bit is 0",
-        "n" : "0",
-        "h" : "1"
-      }
-    },
-    {
-      "name" : "bit u3, [hl]",
-      "description" : "Sets Z if bit u3 in [`hl`] is 0",
-      "cycles" : 3,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if selected bit is 0",
-        "n" : "0",
-        "h" : "1"
-      }
-    },
-    {
-      "name" : "call n16",
-      "description" : "Calls address n16",
-      "cycles" : 6,
       "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "call cc, n16",
-      "description" : "Calls address n16 if condition cc is met",
-      "cycles" : "6/3",
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "ccf",
-      "description" : "Complements the carry flag",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "n" : "0",
-        "h" : "0",
-        "c" : "Complemented"
-      }
-    },
-    {
-      "name" : "cp a, r8",
-      "description" : "flags = `a` - r8",
-      "optionalA" : true,
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0 (`a` == r8)",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow (`a` < r8)"
-      }
-    },
-    {
-      "name" : "cp a, [hl]",
-      "description" : "flags = `a` - [`hl`]",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0 (`a` == [`hl`])",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow (`a` < [`hl`])"
-      }
-    },
-    {
-      "name" : "cp a, n8",
-      "description" : "flags = `a` - n8",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0 (`a` == n8)",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow (`a` < n8)"
-      }
-    },
-    {
-      "name" : "cpl",
-      "description" : "`a` = ~`a`",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "n" : "1",
-        "h" : "1"
-      }
-    },
-    {
-      "name" : "daa",
-      "description" : "Decimal adjusts `a` to correct BCD value after arithmetic",
-      "cycles" : 1,
-      "bytes" : 1,
       "flags" : {
         "z" : "Set if result is 0",
-        "h" : "0",
-        "c" : "Set or reset based on operation"
+        "n" : "Set",
+        "h" : "Set if borrow from bit 4",
+        "c" : "Set if borrow",
+        "pv": "Set if overflow"
       }
     },
     {
-      "name" : "dec r8",
-      "description" : "r8 -= 1",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4"
-      }
-    },
-    {
-      "name" : "dec [hl]",
-      "description" : "[`hl`] -= 1",
-      "cycles" : 3,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4"
-      }
-    },
-    {
-      "name" : "dec r16",
-      "description" : "r16 -= 1",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "dec sp",
-      "description" : "`sp` -= 1",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "di",
-      "description" : "Disables interrupts",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ei",
-      "description" : "Enables interrupts",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "halt",
-      "description" : "Puts the CPU into low power mode",
-      "cycles" : "-",
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "inc r8",
-      "description" : "r8 += 1",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3"
-      }
-    },
-    {
-      "name" : "inc [hl]",
-      "description" : "[`hl`] += 1",
-      "cycles" : 3,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3"
-      }
-    },
-    {
-      "name" : "inc r16",
-      "description" : "r16 += 1",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "inc sp",
-      "description" : "`sp` += 1",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "jp n16",
-      "description" : "Jumps to address n16",
-      "cycles" : 4,
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "jp cc, n16",
-      "description" : "Jumps to address n16 if condition cc is met",
-      "cycles" : "4/3",
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "jp hl",
-      "description" : "Jumps to address in `hl`",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "jr e8",
-      "description" : "Relative jumps by adding e8 to `pc`",
-      "cycles" : 3,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "jr cc, e8",
-      "description" : "Relative jumps by adding e8 to `pc` if condition cc is met",
-      "cycles" : "3/2",
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "ld r8, r8",
-      "description" : "Copies the value from the right register into the left",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld r8, n8",
-      "description" : "r8 = n8",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "ld r16, n16",
-      "description" : "r16 = n16",
-      "cycles" : 3,
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [hl], r8",
-      "description" : "[`hl`] = r8",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [hl], n8",
-      "description" : "[`hl`] = n8",
-      "cycles" : 3,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "ld r8, [hl]",
-      "description" : "r8 = [`hl`]",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [r16], a",
-      "description" : "[r16] = `a`",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [n16], a",
-      "description" : "[n16] = `a`",
-      "cycles" : 4,
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "ldh [$ff00+n8], a",
-      "description" : "[$ff00+n8] = `a`",
-      "cycles" : 3,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [$ff00+c], a",
-      "description" : "[$ff00+`c`] = `a`",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [c], a",
-      "description" : "[$ff00+`c`] = `a`",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld a, [r16]",
-      "description" : "`a` = [r16]",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld a, [n16]",
-      "description" : "`a` = [n16]",
-      "cycles" : 4,
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "ldh a, [$ff00+n8]",
-      "description" : "`a` = [$ff00+n8]",
-      "cycles" : 3,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "ld a, [$ff00+c]",
-      "description" : "`a` = [$ff00+`c`]",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld a, [c]",
-      "description" : "`a` = [$ff00+`c`]",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [hl+], a",
-      "description" : "[`hl`] = `a`, `hl` += 1",
-      "aliasHLI" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [hl-], a",
-      "description" : "[`hl`] = `a`, `hl` -= 1",
-      "aliasHLD" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld a, [hl+]",
-      "description" : "`a` = [`hl`], `hl` += 1",
-      "aliasHLI" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld a, [hl-]",
-      "description" : "`a` = [`hl`], `hl` -= 1",
-      "aliasHLD" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ld sp, n16",
-      "description" : "`sp` = n16",
-      "cycles" : 3,
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "ld [n16], sp",
-      "description" : "[n16, n16 + 1] = `sp`",
-      "cycles" : 5,
-      "bytes" : 3,
-      "flags" : {}
-    },
-    {
-      "name" : "ld hl, sp+e8",
-      "description" : "`hl` = `sp` + e8",
-      "cycles" : 3,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "0",
-        "n" : "0",
-        "h" : "Set if overflow from bit 3",
-        "c" : "Set if overflow from bit 7"
-      }
-    },
-    {
-      "name" : "ld sp, hl",
-      "description" : "`sp` = `hl`",
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "nop",
-      "description" : "No operation",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "or a, r8",
-      "description" : "`a` = `a` | r8",
-      "optionalA" : true,
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "or a, [hl]",
-      "description" : "`a` = `a` | [hl]",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "or a, n8",
-      "description" : "`a` = `a` | n8",
-      "optionalA" : true,
+      "name" : "sub a, n",
+      "description" : "`a = a - n`",
       "cycles" : 2,
       "bytes" : 2,
       "flags" : {
         "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
+        "n" : "Set",
+        "h" : "Set if borrow from bit 4",
+        "c" : "Set if borrow",
+        "pv": "Set if overflow"
       }
-    },
-    {
-      "name" : "pop af",
-      "description" : "Pops the stack into `af`",
-      "cycles" : 3,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "pop r16",
-      "description" : "Pops the stack into r16",
-      "cycles" : 3,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "push af",
-      "description" : "Pushes `af` onto the stack",
-      "cycles" : 4,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "push r16",
-      "description" : "Pushes r16 onto the stack",
-      "cycles" : 4,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "res u3, r8",
-      "description" : "Sets the bit u3 in r8 to 0",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "res u3, [hl]",
-      "description" : "Sets the bit u3 in [`hl`] to 0",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "ret",
-      "description" : "Returns from the current subroutine",
-      "cycles" : 4,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "ret cc",
-      "description" : "Returns from the current subroutine if condition cc is met",
-      "cycles" : "5/2",
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "reti",
-      "description" : "Returns from the current subroutine and enables interrupts",
-      "cycles" : 4,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "rl r8",
-      "description" : "Rotates r8 left, sets bit 0 to carry, sets carry to old bit 7",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "rl [hl]",
-      "description" : "Rotates [`hl`] left, sets bit 0 to carry, sets carry to old bit 7",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "rla",
-      "description" : "Rotates `a` left, sets bit 0 to carry, sets carry to old bit 7",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "rlc r8",
-      "description" : "Rotates r8 left, sets bit 0 and carry to old bit 7",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "rlc [hl]",
-      "description" : "Rotates [`hl`] left, sets bit 0 and carry to old bit 7",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "rlca",
-      "description" : "Rotates `a` left, sets bit 0 and carry to old bit 7",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "rr r8",
-      "description" : "Rotates r8 right, sets bit 7 to carry, sets carry to old bit 0",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "rr [hl]",
-      "description" : "Rotates [`hl`] right, sets bit 7 to carry, sets carry to old bit 0",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "rra",
-      "description" : "Rotates `a` right, sets bit 7 to carry, sets carry to old bit 0",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "rrc r8",
-      "description" : "Rotates r8 right, sets bit 7 and carry to old bit 0",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "rrc [hl]",
-      "description" : "Rotates [`hl`] right, sets bit 7 and carry to old bit 0",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "rrca",
-      "description" : "Rotates `a` right, sets bit 7 and carry to old bit 0",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "rst vec",
-      "description" : "Calls given reset vector",
-      "cycles" : 4,
-      "bytes" : 1,
-      "flags" : {}
-    },
-    {
-      "name" : "sbc a, r8",
-      "description" : "`a` = `a` - r8 - c",
-      "optionalA" : true,
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow"
-      }
-    },
-    {
-      "name" : "sbc a, [hl]",
-      "description" : "`a` = `a` - [`hl`] - c",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow"
-      }
-    },
-    {
-      "name" : "sbc a, n8",
-      "description" : "`a` = `a` - n8 - c",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow"
-      }
-    },
-    {
-      "name" : "scf",
-      "description" : "Sets the carry flag to 1",
-      "cycles" : 1,
-      "bytes" : 1,
-      "flags" : {
-        "n" : "0",
-        "h" : "0",
-        "c" : "1"
-      }
-    },
-    {
-      "name" : "set u3, r8",
-      "description" : "Sets the bit u3 in r8 to 1",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "set u3, [hl]",
-      "description" : "Sets the bit u3 in [`hl`] to 1",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {}
-    },
-    {
-      "name" : "sla r8",
-      "description" : "Shifts r8 left, sets carry to old bit 7",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "sla [hl]",
-      "description" : "Shifts [`hl`] left, sets carry to old bit 7",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 7"
-      }
-    },
-    {
-      "name" : "sra r8",
-      "description" : "Shifts r8 right keeping bit 7 unchanged, sets carry to old bit 0",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "sra [hl]",
-      "description" : "Shifts [`hl`] right keeping bit 7 unchanged, sets carry to old bit 0",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "srl r8",
-      "description" : "Shifts r8 right, sets carry to old bit 0",
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "srl [hl]",
-      "description" : "Shifts [`hl`] right, sets carry to old bit 0",
-      "cycles" : 4,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "Set to old bit 0"
-      }
-    },
-    {
-      "name" : "stop",
-      "description" : "Puts the CPU into very low power mode",
-      "cycles" : "-",
-      "bytes" : "2",
-      "flags" : {}
     },
     {
       "name" : "sub a, r8",
-      "description" : "`a` = `a` - r8",
-      "optionalA" : true,
+      "description" : "`a = a - r8`",
       "cycles" : 1,
       "bytes" : 1,
       "flags" : {
-        "z" : "Set if result is 0 (`a` == r8)",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow (`a` < r8)"
+        "z" : "Set if result is 0",
+        "n" : "Set",
+        "h" : "Set if borrow from bit 4",
+        "c" : "Set if borrow",
+        "pv": "Set if overflow"
       }
     },
     {
-      "name" : "sub a, [hl]",
-      "description" : "`a` = `a` - [`hl`]",
-      "optionalA" : true,
+      "name" : "tst a, (hl)",
+      "description" : "`a AND (hl)`",
+      "cycles" : 3,
+      "bytes" : 2,
+      "flags" : {
+        "z" : "Set if result is 0",
+        "n" : "Reset",
+        "h" : "Set",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name" : "tst a, n",
+      "description" : "`a AND n`",
+      "cycles" : 3,
+      "bytes" : 3,
+      "flags" : {
+        "z" : "Set if result is 0",
+        "n" : "Reset",
+        "h" : "Set",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name" : "tst a, r8",
+      "description" : "`a AND r8`",
+      "cycles" : 2,
+      "bytes" : 2,
+      "flags" : {
+        "z" : "Set if result is 0",
+        "n" : "Reset",
+        "h" : "Set",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name" : "tstio n",
+      "description" : "`{0, 0, c} AND n`",
+      "cycles" : 4,
+      "bytes" : 3,
+      "flags" : {
+        "z" : "Set if result is 0",
+        "n" : "Reset",
+        "h" : "Set",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name" : "xor a, (hl)",
+      "description" : "`a = a XOR (hl)`",
       "cycles" : 2,
       "bytes" : 1,
       "flags" : {
-        "z" : "Set if result is 0 (`a` == [`hl`])",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow (`a` < [`hl`])"
+        "z" : "Set if result is 0",
+        "n" : "Reset",
+        "h" : "Reset",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
       }
     },
     {
-      "name" : "sub a, n8",
-      "description" : "`a` = `a` - n8",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0 (`a` == n8)",
-        "n" : "1",
-        "h" : "Set if no borrow from bit 4",
-        "c" : "Set if no borrow (`a` < n8)"
-      }
-    },
-    {
-      "name" : "swap r8",
-      "description" : "Swaps the upper and lower 4 bits in r8",
+      "name" : "xor a, ir",
+      "description" : "`a = a XOR ir`",
       "cycles" : 2,
       "bytes" : 2,
       "flags" : {
         "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
+        "n" : "Reset",
+        "h" : "Reset",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
       }
     },
     {
-      "name" : "swap [hl]",
-      "description" : "Swaps the upper and lower 4 bits in [`hl`]",
+      "name" : "xor a, (ix/y+d)",
+      "description" : "`a = a XOR (ix/y+d)`",
       "cycles" : 4,
+      "bytes" : 3,
+      "flags" : {
+        "z" : "Set if result is 0",
+        "n" : "Reset",
+        "h" : "Reset",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
+      }
+    },
+    {
+      "name" : "xor a, n",
+      "description" : "`a = a XOR n`",
+      "cycles" : 2,
       "bytes" : 2,
       "flags" : {
         "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
+        "n" : "Reset",
+        "h" : "Reset",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
       }
     },
     {
       "name" : "xor a, r8",
-      "description" : "`a` = `a` ^ r8",
-      "optionalA" : true,
+      "description" : "`a = a XOR r8`",
       "cycles" : 1,
       "bytes" : 1,
       "flags" : {
         "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "xor a, [hl]",
-      "description" : "`a` = `a` ^ [`hl`]",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 1,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
-      }
-    },
-    {
-      "name" : "xor a, n8",
-      "description" : "`a` = `a` ^ n8",
-      "optionalA" : true,
-      "cycles" : 2,
-      "bytes" : 2,
-      "flags" : {
-        "z" : "Set if result is 0",
-        "n" : "0",
-        "h" : "0",
-        "c" : "0"
+        "n" : "Reset",
+        "h" : "Reset",
+        "c" : "Reset",
+        "pv": "Set if parity is even"
       }
     }
   ]
