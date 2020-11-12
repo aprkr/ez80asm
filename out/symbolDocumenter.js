@@ -9,6 +9,11 @@ const includeLineRegex = /^\#?include[\W]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
+const completionProposer = require("./completion");
+const wordregex = /\b\S+(\.\w+)?(\s?[\+|\-|\*|\/]\s?\S+)?\b/g
+const wordregex2 = /(^(\S+)\s(\S+))\b(\)?\s?,\s(.+))?/
+const commentregex = /.+?;/g
+const offsetregex = /\w(\s?[\+|\-|\*|\/]\s?\w+)/g
 // class ScopeDescriptor {
 //     constructor(start, end) {
 //         this.start = start;
@@ -43,6 +48,9 @@ var SearchMode;
 class ASMSymbolDocumenter {
     constructor() {
         this.files = {};
+        this.ASMCompletionProposer = new completionProposer.ASMCompletionProposer
+        this.instructionItemsFull = this.ASMCompletionProposer.instructionItemsFull
+        this.collection = vscode.languages.createDiagnosticCollection();
         vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, undefined).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
@@ -51,6 +59,10 @@ class ASMSymbolDocumenter {
             });
         });
         vscode.workspace.onDidChangeTextDocument((event) => {
+            this._document(event.document);
+            this.diagnostics(event.document, this.collection)
+        });
+        vscode.workspace.onDidOpenTextDocument((event) => {
             this._document(event.document);
         });
         const watcher = vscode.workspace.createFileSystemWatcher("**/*.{ez80,z80,inc,asm}");
@@ -275,13 +287,149 @@ class ASMSymbolDocumenter {
                         documentation = commentBuffer.join("\n");
                     }
                     table.symbols[name] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
+                    table.symbols[name].lowercase = name.toLowerCase();
+                    // this.lowercase.symbols[name.toLowerCase()] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
                 }
                 commentBuffer = [];
             }
+
         }
         // if (currentScope) {
         // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
         // }
+    }
+    diagnostics(document, collection) {
+        collection.clear();
+        let diagnosticsArray = [];
+        const symbols = this.symbols(document);
+
+
+
+        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+            const line = document.lineAt(lineNumber);
+            const commentLineMatch = commentLineRegex.exec(line.text);
+            const includeLineMatch = includeLineRegex.exec(line.text);
+            const labelMatch = labelDefinitionRegex.exec(line.text);
+            if (commentLineMatch || includeLineMatch || labelMatch) {
+                continue
+            } else {
+                let nonCommentMatch = line.text.match(commentregex);
+                if (nonCommentMatch != null || (!line.text.includes(";") && line.text.length > 0)) {
+                    if (nonCommentMatch) {
+                        nonCommentMatch = nonCommentMatch[0].replace(";", "");
+                    } else {
+                        nonCommentMatch = line.text
+                    }
+                    nonCommentMatch = nonCommentMatch.trim();
+                    if (nonCommentMatch.length == 0 || nonCommentMatch.startsWith(".")) {
+                        continue
+                    }
+                    // let uh = nonCommentMatch.match(offsetregex);
+                    nonCommentMatch = nonCommentMatch.replace(/\'.\'/, "1");
+                    nonCommentMatch = nonCommentMatch.replace("\t", " ");
+                    const offsetmatch = offsetregex.exec(nonCommentMatch)
+                    const wordmatch = wordregex2.exec(nonCommentMatch);
+                    nonCommentMatch = nonCommentMatch.toLowerCase();
+
+                    nonCommentMatch = nonCommentMatch.replace(".lil", "");
+                    nonCommentMatch = nonCommentMatch.replace(".sil", "");
+                    nonCommentMatch = nonCommentMatch.replace(".lis", "");
+                    nonCommentMatch = nonCommentMatch.replace(".lil", "");
+                    nonCommentMatch = nonCommentMatch.replace(".l", "");
+                    nonCommentMatch = nonCommentMatch.replace(".s", "");
+                    nonCommentMatch = nonCommentMatch.replace(" ,", ",");
+                    if (wordmatch) {
+                        wordmatch[2] = wordmatch[2].replace(".lil", "");
+                        wordmatch[2] = wordmatch[2].replace(".sil", "");
+                        wordmatch[2] = wordmatch[2].replace(".lis", "");
+                        wordmatch[2] = wordmatch[2].replace(".lil", "");
+                        wordmatch[2] = wordmatch[2].replace(".l", "");
+                        wordmatch[2] = wordmatch[2].replace(".s", "");
+                        wordmatch[3] = wordmatch[3].replace("(", "");
+                        wordmatch[3] = wordmatch[3].replace(")", "");
+                        if (wordmatch[5]) {
+                            wordmatch[5] = wordmatch[5].replace("(", "");
+                            wordmatch[5] = wordmatch[5].replace(")", "");
+                        }
+                    }
+
+                    // nonCommentMatch = nonCommentMatch.replace("$", "");
+                    if (this.instructionItemsFull.indexOf(nonCommentMatch) != -1) {
+                        continue;
+                    }
+
+                    
+                    let match = false
+                    for (let i = 2; i < 5; ++i) {
+                        if (wordmatch == undefined) {
+                            break
+                        }
+                        if (i == 4) {
+                            i = 5;
+                        }
+                        if (i == 2 && offsetmatch) {
+                            for (let j = 1; j < offsetmatch.length; ++j) {
+                                nonCommentMatch = nonCommentMatch.replace(offsetmatch[j].toLowerCase(), "")
+                                wordmatch[3] = wordmatch[3].replace(offsetmatch[j], "")
+                                wordmatch[5] = wordmatch[5].replace(offsetmatch[j], "")
+                            }
+                        }
+                        if (wordmatch[i] == undefined) {
+                            break
+                        }
+                        let test = "";
+                        if (wordmatch[i].match(/($[0-9A-Fa-f]+|[0-9]+)/)) {
+                            test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
+                            if (this.instructionItemsFull.indexOf(test) != -1) {
+                                match = true
+                                break
+                            }
+                            test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "mmn")
+                            if (this.instructionItemsFull.indexOf(test) != -1) {
+                                match = true
+                                break
+                            }
+                            test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "d")
+                            if (this.instructionItemsFull.indexOf(test) != -1) {
+                                match = true
+                                break
+                            }
+                        }
+                        for (var name in symbols) {
+                            if (symbols[name].lowercase === wordmatch[i].toLowerCase()) {
+                                test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "mmn")
+                                if (this.instructionItemsFull.indexOf(test) != -1) {
+                                    match = true
+                                    break
+                                }
+                                // test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "d")
+                                // if (this.instructionItemsFull.indexOf(test) != -1) {
+                                //     match = true
+                                //     break
+                                // }
+                                test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
+                                if (this.instructionItemsFull.indexOf(test) != -1) {
+                                    match = true
+                                    break
+                                }
+                                test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "bit")
+                                if (this.instructionItemsFull.indexOf(test) != -1) {
+                                    match = true
+                                    break
+                                }
+                            }
+                        }
+                    }
+                    if (!match) {
+                        console.log(nonCommentMatch)
+                        const endChar = 1 + nonCommentMatch.length;
+                        const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                        diagnosticsArray.push(new vscode.Diagnostic(range, "Invalid operands"));
+                    }
+                }
+            }
+        }
+        collection.set(document.uri, diagnosticsArray);
     }
 }
 exports.ASMSymbolDocumenter = ASMSymbolDocumenter;

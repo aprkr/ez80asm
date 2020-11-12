@@ -14,6 +14,7 @@ class ASMCompletionProposer {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
         this.instructionItems = [];
+        this.instructionItemsFull = [];
         const extension = vscode.extensions.getExtension("alex-parker.ez80-asm");
         // const instructionsJSONPath = "c:\\Users\\Alex\\Downloads\\ez80asm\\instructions.json"
         const instructionsJSONPath = path.join(extension.extensionPath, "instructions.json");
@@ -55,6 +56,69 @@ class ASMCompletionProposer {
                 }
             }
             output.forEach((element) => {
+                let someList = [];
+                someList = replaceStuff(element.name);
+                // let someOtherList = [];
+                for (let i = 0; i < someList.length; ++i) {
+                    this.instructionItemsFull = this.instructionItemsFull.concat(replaceStuff(someList[i]));
+                }
+                function replaceStuff(name) {
+                    let runningList = [];
+                    if (name.includes("a,") && !name.includes("ld a")) {
+                        runningList.push(name.replace("a, ", ""));
+                    }
+                    if (name.includes("r8")) {
+                        runningList.push(name.replace("r8", "a"));
+                        runningList.push(name.replace("r8", "b"));
+                        runningList.push(name.replace("r8", "c"));
+                        runningList.push(name.replace("r8", "d"));
+                        runningList.push(name.replace("r8", "e"));
+                        runningList.push(name.replace("r8", "h"));
+                        runningList.push(name.replace("r8", "l"));
+                    } else if (name.includes("r24")) {
+                        runningList.push(name.replace("r24", "bc"));
+                        runningList.push(name.replace("r24", "de"));
+                        runningList.push(name.replace("r24", "hl"));
+                    } else if (name.includes(" ir")) {
+                        runningList.push(name.replace("ir", "ixh"));
+                        runningList.push(name.replace("ir", "ixl"));
+                        runningList.push(name.replace("ir", "iyh"));
+                        runningList.push(name.replace("ir", "iyl"));
+                    } else if (name.includes("ix/y")) {
+                        if (name.includes("ix/y+d")) {
+                            runningList.push(name.replace("ix/y+d", "ix"))
+                            runningList.push(name.replace("ix/y+d", "iy"))
+                        }
+                        runningList.push(name.replace("ix/y", "ix"));
+                        runningList.push(name.replace("ix/y", "iy"));
+                    } else if (name.includes("rxy")) {
+                        runningList.push(name.replace("rxy", "bc"));
+                        runningList.push(name.replace("rxy", "de"));
+                        runningList.push(name.replace("rxy", "ix"));
+                        runningList.push(name.replace("rxy", "iy"));
+                    } else if (name.includes("jr cc")) {
+                        runningList.push(name.replace("cc", "c"));
+                        runningList.push(name.replace("cc", "nc"));
+                        runningList.push(name.replace("cc", "z"));
+                        runningList.push(name.replace("cc", "nz"));
+                    } else if (name.includes("cc")) {
+                        runningList.push(name.replace("cc", "c"));
+                        runningList.push(name.replace("cc", "nc"));
+                        runningList.push(name.replace("cc", "z"));
+                        runningList.push(name.replace("cc", "nz"));
+                        runningList.push(name.replace("cc", "p"));
+                        runningList.push(name.replace("cc", "m"));
+                        runningList.push(name.replace("cc", "po"));
+                        runningList.push(name.replace("cc", "pe"));
+                    } else {
+                        runningList.push(name)
+                    }
+                    return runningList;
+                }
+
+
+
+
                 if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("UPPER")) {
                     element.name = element.name.toUpperCase();
                 } else if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("lower")) {
@@ -121,54 +185,55 @@ class ASMCompletionProposer {
                 }
                 this.instructionItems.push(item);
             })
+            this.instructionItemsFull = [...new Set(this.instructionItemsFull)]
         });
     }
 
-provideCompletionItems(document, position, token, context) {
-    let output = [];
-    // let prefix = document.getText(new vscode.Range(position.with({ character: 0 }), position));
-    // let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
-    // let triggerWordLine = document.getText(triggerWordLineRange);
-    // let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
-    // let triggerWord = document.getText(triggerWordRange);
-    // if (triggerWord.length < 2) {
-    //     return output
-    // }
-    if (vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
-        this.instructionItems.forEach((item) => {
-            output.push(item);
-        })
+    provideCompletionItems(document, position, token, context) {
+        let output = [];
+        // let prefix = document.getText(new vscode.Range(position.with({ character: 0 }), position));
+        // let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
+        // let triggerWordLine = document.getText(triggerWordLineRange);
+        // let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
+        // let triggerWord = document.getText(triggerWordRange);
+        // if (triggerWord.length < 2) {
+        //     return output
+        // }
+        if (vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
+            this.instructionItems.forEach((item) => {
+                output.push(item);
+            })
 
-    }
-    const symbols = this.symbolDocumenter.symbols(document);
-    for (const name in symbols) {
-        if (symbols.hasOwnProperty(name)) {
-            const symbol = symbols[name];
-            let kind = vscode.CompletionItemKind.Function;
-            if (symbol.kind == vscode.SymbolKind.Method) {
-                kind = vscode.CompletionItemKind.Method;
-            }
-            if (symbol.kind == vscode.SymbolKind.Variable) {
-                kind = vscode.CompletionItemKind.Variable;
-            }
-            const item = new vscode.CompletionItem(name, kind);
-            if (symbol.documentation) {
-                item.documentation = new vscode.MarkdownString(symbol.documentation);
-            }
-            // if (triggerWord.indexOf(".") == 0 && item.label.indexOf(".") == 0) {
-            //     item.insertText = item.label.substring(1);
-            // }
-            //   if (symbol.isLocal && symbol.scope && symbol.scope.end) {
-            //       let symbolRange = new vscode.Range(symbol.scope.start, symbol.scope.end);
-            //       if (symbolRange.contains(position) == false) {
-            //           continue;
-            //       }
-            //   }
-            output.push(item);
         }
+        const symbols = this.symbolDocumenter.symbols(document);
+        for (const name in symbols) {
+            if (symbols.hasOwnProperty(name)) {
+                const symbol = symbols[name];
+                let kind = vscode.CompletionItemKind.Function;
+                if (symbol.kind == vscode.SymbolKind.Method) {
+                    kind = vscode.CompletionItemKind.Method;
+                }
+                if (symbol.kind == vscode.SymbolKind.Variable) {
+                    kind = vscode.CompletionItemKind.Variable;
+                }
+                const item = new vscode.CompletionItem(name, kind);
+                if (symbol.documentation) {
+                    item.documentation = new vscode.MarkdownString(symbol.documentation);
+                }
+                // if (triggerWord.indexOf(".") == 0 && item.label.indexOf(".") == 0) {
+                //     item.insertText = item.label.substring(1);
+                // }
+                //   if (symbol.isLocal && symbol.scope && symbol.scope.end) {
+                //       let symbolRange = new vscode.Range(symbol.scope.start, symbol.scope.end);
+                //       if (symbolRange.contains(position) == false) {
+                //           continue;
+                //       }
+                //   }
+                output.push(item);
+            }
+        }
+        return output;
     }
-    return output;
-}
 }
 exports.ASMCompletionProposer = ASMCompletionProposer;
 //# sourceMappingURL=completionProposer.js.map

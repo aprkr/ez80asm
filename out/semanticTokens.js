@@ -30,7 +30,7 @@ class ASMSemanticTokenProvider {
                 if (wordmatch) {
                     let char = 0;
                     for (let index = 0; index < wordmatch.length; ++index) {
-                        if (symbols[wordmatch[index]]) {
+                        if (symbols[wordmatch[index]] && !wordmatch[index].includes("ld")) {
                             // let regexp = new RegExp("(\\b|\\s|^)"+wordmatch[index]+"(\\W|\\z|\\b)","g");
                             // let startChar = nonCommentMatch.search(regexp);
                             const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
