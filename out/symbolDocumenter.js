@@ -13,7 +13,7 @@ const completionProposer = require("./completion");
 const wordregex = /\b\S+(\.\w+)?(\s?[\+|\-|\*|\/]\s?\S+)?\b/g
 const wordregex2 = /(^(\S+)\s(\S+))\b(\)?\s?,\s(.+))?/
 const commentregex = /.+?;/g
-const offsetregex = /\w(\s?[\+|\-|\*|\/]\s?\w+)/g
+const offsetregex = /(\s?[\+|\-|\*|\/]\s?\S+)(.+)?/
 // class ScopeDescriptor {
 //     constructor(start, end) {
 //         this.start = start;
@@ -55,11 +55,12 @@ class ASMSymbolDocumenter {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
                     this._document(document);
+                    // this.diagnostics(document, this.collection)
                 });
             });
         });
         vscode.workspace.onDidChangeTextDocument((event) => {
-            this._document(event.document);
+            this._document(event.document, event);
             this.diagnostics(event.document, this.collection)
         });
         vscode.workspace.onDidOpenTextDocument((event) => {
@@ -223,12 +224,33 @@ class ASMSymbolDocumenter {
         }
         buffer.push(line);
     }
-    _document(document) {
-        const table = new FileTable(document.uri.fsPath);
-        this.files[document.uri.fsPath] = table;
+    _document(document, event) {
+        let table = new FileTable(document.uri.fsPath);
         // let currentScope = undefined;
         let commentBuffer = [];
-        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+        let startLine = 0
+        let endLine = document.lineCount
+        if (event) {
+            if (event.document === document) {
+                let lines = 1
+                startLine = event.contentChanges[0].range.start.line - 1
+                lines = (event.contentChanges[0].text.match(/\n/g)||[]).length + 1
+                endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
+                table = this.files[document.uri.fsPath];
+            }
+        }
+        this.files[document.uri.fsPath] = table;
+        if (event) {
+            let inter = event.contentChanges[0].range
+            for (var name in table.symbols) {
+                let symrange = table.symbols[name].location.range
+                if (inter.intersection(symrange)) {
+                    
+                    delete table.symbols[name];
+                }
+            }
+        }
+        for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
             const line = document.lineAt(lineNumber);
             const commentLineMatch = commentLineRegex.exec(line.text);
             if (commentLineMatch) {
@@ -306,6 +328,9 @@ class ASMSymbolDocumenter {
 
 
         for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+            const invalidOperands = "Invalid Operands"
+            const unknownOpcode = "Unknown Opcode"
+            let errorCode = invalidOperands
             const line = document.lineAt(lineNumber);
             const commentLineMatch = commentLineRegex.exec(line.text);
             const includeLineMatch = includeLineRegex.exec(line.text);
@@ -324,27 +349,29 @@ class ASMSymbolDocumenter {
                     if (nonCommentMatch.length == 0 || nonCommentMatch.startsWith(".")) {
                         continue
                     }
-                    // let uh = nonCommentMatch.match(offsetregex);
                     nonCommentMatch = nonCommentMatch.replace(/\'.\'/, "1");
                     nonCommentMatch = nonCommentMatch.replace("\t", " ");
                     const offsetmatch = offsetregex.exec(nonCommentMatch)
                     const wordmatch = wordregex2.exec(nonCommentMatch);
                     nonCommentMatch = nonCommentMatch.toLowerCase();
-
-                    nonCommentMatch = nonCommentMatch.replace(".lil", "");
-                    nonCommentMatch = nonCommentMatch.replace(".sil", "");
-                    nonCommentMatch = nonCommentMatch.replace(".lis", "");
-                    nonCommentMatch = nonCommentMatch.replace(".lil", "");
-                    nonCommentMatch = nonCommentMatch.replace(".l", "");
-                    nonCommentMatch = nonCommentMatch.replace(".s", "");
                     nonCommentMatch = nonCommentMatch.replace(" ,", ",");
+                    if (nonCommentMatch.includes(".")) {
+                        nonCommentMatch = nonCommentMatch.replace(".lil ", " ");
+                        nonCommentMatch = nonCommentMatch.replace(".sil ", " ");
+                        nonCommentMatch = nonCommentMatch.replace(".lis ", " ");
+                        nonCommentMatch = nonCommentMatch.replace(".lil ", " ");
+                        nonCommentMatch = nonCommentMatch.replace(".l ", " ");
+                        nonCommentMatch = nonCommentMatch.replace(".s ", " ");
+                        if (wordmatch) {
+                            wordmatch[2] = wordmatch[2].replace(".lil ", " ");
+                            wordmatch[2] = wordmatch[2].replace(".sil ", " ");
+                            wordmatch[2] = wordmatch[2].replace(".lis ", " ");
+                            wordmatch[2] = wordmatch[2].replace(".lil ", " ");
+                            wordmatch[2] = wordmatch[2].replace(".l ", " ");
+                            wordmatch[2] = wordmatch[2].replace(".s ", " ");
+                        }
+                    }
                     if (wordmatch) {
-                        wordmatch[2] = wordmatch[2].replace(".lil", "");
-                        wordmatch[2] = wordmatch[2].replace(".sil", "");
-                        wordmatch[2] = wordmatch[2].replace(".lis", "");
-                        wordmatch[2] = wordmatch[2].replace(".lil", "");
-                        wordmatch[2] = wordmatch[2].replace(".l", "");
-                        wordmatch[2] = wordmatch[2].replace(".s", "");
                         wordmatch[3] = wordmatch[3].replace("(", "");
                         wordmatch[3] = wordmatch[3].replace(")", "");
                         if (wordmatch[5]) {
@@ -358,27 +385,41 @@ class ASMSymbolDocumenter {
                         continue;
                     }
 
-                    
+
                     let match = false
                     for (let i = 2; i < 5; ++i) {
-                        if (wordmatch == undefined) {
+                        if (!wordmatch) {
+                            if (!nonCommentMatch.match(/\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL|adc|add|cp|daa|dec|inc|mlt|neg|sbc|sub|bit|res|set|cpd|cpdr|cpi|cpir|ldd|lddr|ldi|ldir|ex|exx|in|in0|ind|indr|indrx|ind2|ind2r|indm|indmr|ini|inir|inirx|ini2|ini2r|inim|inimr|otdm|otdmr|otdrx|otim|otimr|otirx|out|out0|outd|otdr|outd2|otd2r|outi|otir|outi2|oti2r|tstio|ld|lea|pea|pop|push|and|cpl|or|tst|xor|ccf|di|ei|halt|im|nop|rsmix|scf|slp|stmix|call|djnz|jp|jr|ret|reti|retn|rst|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|sla|sra|srl)\b/)) {
+                                errorCode = unknownOpcode
+                            }
+                            break
+                        }
+                        if (wordmatch[i] == undefined) {
                             break
                         }
                         if (i == 4) {
                             i = 5;
                         }
                         if (i == 2 && offsetmatch) {
-                            for (let j = 1; j < offsetmatch.length; ++j) {
-                                nonCommentMatch = nonCommentMatch.replace(offsetmatch[j].toLowerCase(), "")
-                                wordmatch[3] = wordmatch[3].replace(offsetmatch[j], "")
-                                wordmatch[5] = wordmatch[5].replace(offsetmatch[j], "")
+                            if (nonCommentMatch.replace(offsetmatch[0].toLowerCase(), "").includes(" ")) {
+                                nonCommentMatch = nonCommentMatch.replace(offsetmatch[0].toLowerCase(), "");
+                                if (nonCommentMatch.indexOf("(") != -1) {
+                                    nonCommentMatch = nonCommentMatch + ")";
+                                }
+                                if (wordmatch[5]) {
+                                    wordmatch[3] = wordmatch[3].replace(offsetmatch[0].replace("(", "").replace(")", ""), "");
+                                    wordmatch[5] = wordmatch[5].replace(offsetmatch[0].replace("(", "").replace(")", ""), "");
+                                    wordmatch[3] = wordmatch[3].replace(offsetmatch[0].replace(")", ""), "");
+                                    wordmatch[5] = wordmatch[5].replace(offsetmatch[0].replace(")", ""), "");
+
+                                }
+
                             }
-                        }
-                        if (wordmatch[i] == undefined) {
+                            match = true
                             break
                         }
                         let test = "";
-                        if (wordmatch[i].match(/($[0-9A-Fa-f]+|[0-9]+)/)) {
+                        if (wordmatch[i].match(/(\$[0-9A-Fa-f]+|[0-9]+)/)) {
                             test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
                             if (this.instructionItemsFull.indexOf(test) != -1) {
                                 match = true
@@ -402,11 +443,6 @@ class ASMSymbolDocumenter {
                                     match = true
                                     break
                                 }
-                                // test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "d")
-                                // if (this.instructionItemsFull.indexOf(test) != -1) {
-                                //     match = true
-                                //     break
-                                // }
                                 test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
                                 if (this.instructionItemsFull.indexOf(test) != -1) {
                                     match = true
@@ -417,14 +453,30 @@ class ASMSymbolDocumenter {
                                     match = true
                                     break
                                 }
+                                let withoutpars = nonCommentMatch.replace("(", "").replace(")", "");
+                                test = withoutpars.replace(wordmatch[i].toLowerCase(), "mmn")
+                                if (this.instructionItemsFull.indexOf(test) != -1) {
+                                    match = true
+                                    break
+                                }
+                                test = withoutpars.replace(wordmatch[i].toLowerCase(), "n")
+                                if (this.instructionItemsFull.indexOf(test) != -1) {
+                                    match = true
+                                    break
+                                }
+                                test = withoutpars.replace(wordmatch[i].toLowerCase(), "bit")
+                                if (this.instructionItemsFull.indexOf(test) != -1) {
+                                    match = true
+                                    break
+                                }
                             }
                         }
                     }
                     if (!match) {
-                        console.log(nonCommentMatch)
+                        // console.log(nonCommentMatch)
                         const endChar = 1 + nonCommentMatch.length;
                         const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
-                        diagnosticsArray.push(new vscode.Diagnostic(range, "Invalid operands"));
+                        diagnosticsArray.push(new vscode.Diagnostic(range, errorCode));
                     }
                 }
             }
