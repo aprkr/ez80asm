@@ -18,7 +18,13 @@ class ASMHoverProvider {
             const symbol = this.symbolDocumenter.symbol(text, document);
             let numberValue = undefined;
             if (symbol !== undefined && symbol.documentation !== undefined) {
-                return new vscode.Hover(new vscode.MarkdownString(symbol.documentation), range);
+                let hoverText = new vscode.MarkdownString()
+                if (symbol.kind == vscode.SymbolKind.Variable) {
+                    hoverText.appendCodeblock(symbol.documentation.replace("\t", " "), "ez80-asm")
+                } else {
+                    hoverText.appendMarkdown(symbol.documentation)
+                }
+                return new vscode.Hover(hoverText, range);
             }
             if (hexRegex.test(text)) {
                 numberValue = parseInt(hexRegex.exec(text)[2], 16); // Group 2 of regex is actual digits

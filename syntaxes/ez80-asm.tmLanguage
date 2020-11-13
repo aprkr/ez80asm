@@ -5,13 +5,14 @@
 	<key>patterns</key>
 	<array>
 
-		<!--Stuff that needs to be replaced-->
+		<!--Stuff that needs to be replaced
 		<dict>
 			<key>match</key>			
 			<string>\b(r8|R8|r24|R24|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|rxy|RXY|bit|BIT|cc|CC)\b</string>
 			<key>name</key>
 			<string>invalid</string>
 		</dict>
+		-->
 
 		<dict>
 			<key>match</key>			
@@ -102,7 +103,7 @@
 
 		<dict>
 			<key>match</key>			
-			<string>\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL|adc|add|cp|daa|dec|inc|mlt|neg|sbc|sub|bit|res|set|cpd|cpdr|cpi|cpir|ldd|lddr|ldi|ldir|ex|exx|in|in0|ind|indr|indrx|ind2|ind2r|indm|indmr|ini|inir|inirx|ini2|ini2r|inim|inimr|otdm|otdmr|otdrx|otim|otimr|otirx|out|out0|outd|otdr|outd2|otd2r|outi|otir|outi2|oti2r|tstio|ld|lea|pea|pop|push|and|cpl|or|tst|xor|ccf|di|ei|halt|im|nop|rsmix|scf|slp|stmix|call|djnz|jp|jr|ret|reti|retn|rst|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|sla|sra|srl)\b</string>
+			<string>\s(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL|adc|add|cp|daa|dec|inc|mlt|neg|sbc|sub|bit|res|set|cpd|cpdr|cpi|cpir|ldd|lddr|ldi|ldir|ex|exx|in|in0|ind|indr|indrx|ind2|ind2r|indm|indmr|ini|inir|inirx|ini2|ini2r|inim|inimr|otdm|otdmr|otdrx|otim|otimr|otirx|out|out0|outd|otdr|outd2|otd2r|outi|otir|outi2|oti2r|tstio|ld|lea|pea|pop|push|and|cpl|or|tst|xor|ccf|di|ei|halt|im|nop|rsmix|scf|slp|stmix|call|djnz|jp|jr|ret|reti|retn|rst|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|sla|sra|srl)\s</string>
 			<key>name</key>
 			<string>keyword.control.opcodes.ez80</string>
 		</dict>
@@ -166,6 +167,13 @@
 			<key>name</key>
 			<string>keyword.registers.ez80</string>
 		</dict>	
+
+		<dict>
+			<key>match</key>			
+			<string>(\w+(?=\s+?(?:equ|EQU)\s+))</string>
+			<key>name</key>
+			<string>variable.ez80</string>
+		</dict>
 
 		<!--Catch-all for any other word, remove this if you don't use semantic tokens-->
 		<dict>

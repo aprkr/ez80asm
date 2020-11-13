@@ -11,7 +11,7 @@ const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
 const completionProposer = require("./completion");
 const wordregex = /\b\S+(\.\w+)?(\s?[\+|\-|\*|\/]\s?\S+)?\b/g
-const wordregex2 = /(^(\S+)\s(\S+))\b(\)?\s?,\s(.+))?/
+const wordregex2 = /(^(\S+)\s(\S+))\b(\)?\s?,\s?(.+))?/
 const commentregex = /.+?;/g
 const offsetregex = /(\s?[\+|\-|\*|\/]\s?\S+)(.+)?/
 // class ScopeDescriptor {
@@ -233,8 +233,8 @@ class ASMSymbolDocumenter {
         if (event) {
             if (event.document === document) {
                 let lines = 1
-                startLine = event.contentChanges[0].range.start.line - 1
-                lines = (event.contentChanges[0].text.match(/\n/g)||[]).length + 1
+                startLine = event.contentChanges[0].range.start.line - 2
+                lines = (event.contentChanges[0].text.match(/\n/g)||[]).length + 2
                 endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
                 table = this.files[document.uri.fsPath];
             }
@@ -242,11 +242,11 @@ class ASMSymbolDocumenter {
         this.files[document.uri.fsPath] = table;
         if (event) {
             let inter = event.contentChanges[0].range
-            for (var name in table.symbols) {
-                let symrange = table.symbols[name].location.range
+            for (var symName in table.symbols) {
+                let symrange = table.symbols[symName].location.range
                 if (inter.intersection(symrange)) {
                     
-                    delete table.symbols[name];
+                    delete table.symbols[symName];
                 }
             }
         }
@@ -302,7 +302,7 @@ class ASMSymbolDocumenter {
                     if (defineExpressionRegex.test(line.text)) {
                         const trimmed = line.text.replace(/[\s]+/, " ");
                         const withoutComment = trimmed.replace(/;.*$/, "");
-                        commentBuffer.splice(0, 0, `\`${withoutComment}\`\n`);
+                        commentBuffer.splice(0, 0, `${withoutComment}`);
                         kind = vscode.SymbolKind.Variable
                     }
                     if (commentBuffer.length > 0) {
@@ -346,12 +346,14 @@ class ASMSymbolDocumenter {
                         nonCommentMatch = line.text
                     }
                     nonCommentMatch = nonCommentMatch.trim();
-                    if (nonCommentMatch.length == 0 || nonCommentMatch.startsWith(".")) {
+                    if (nonCommentMatch.length == 0 || nonCommentMatch.startsWith(".") || nonCommentMatch.startsWith("#")) {
                         continue
                     }
                     nonCommentMatch = nonCommentMatch.replace(/\'.\'/, "1");
                     nonCommentMatch = nonCommentMatch.replace("\t", " ");
                     const offsetmatch = offsetregex.exec(nonCommentMatch)
+                    nonCommentMatch = nonCommentMatch.replace("b_call", "call ")
+                    nonCommentMatch = nonCommentMatch.replace("B_CALL", "call ")
                     const wordmatch = wordregex2.exec(nonCommentMatch);
                     nonCommentMatch = nonCommentMatch.toLowerCase();
                     nonCommentMatch = nonCommentMatch.replace(" ,", ",");
@@ -379,12 +381,9 @@ class ASMSymbolDocumenter {
                             wordmatch[5] = wordmatch[5].replace(")", "");
                         }
                     }
-
-                    // nonCommentMatch = nonCommentMatch.replace("$", "");
-                    if (this.instructionItemsFull.indexOf(nonCommentMatch) != -1) {
+                    if (this.instructionItemsFull.indexOf(nonCommentMatch) != -1 && !nonCommentMatch.match(/\b(r8|R8|r24|R24|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|rxy|RXY|bit|BIT|cc|CC)\b/)) {
                         continue;
                     }
-
 
                     let match = false
                     for (let i = 2; i < 5; ++i) {
