@@ -51,20 +51,23 @@ class ASMSymbolDocumenter {
         this.ASMCompletionProposer = new completionProposer.ASMCompletionProposer
         this.instructionItemsFull = this.ASMCompletionProposer.instructionItemsFull
         this.collection = vscode.languages.createDiagnosticCollection();
-        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, undefined).then((files) => {
+        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 7).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
                     this._document(document);
-                    // this.diagnostics(document, this.collection)
                 });
             });
         });
         vscode.workspace.onDidChangeTextDocument((event) => {
             this._document(event.document, event);
-            this.diagnostics(event.document, this.collection)
+            this.diagnostics(event.document, this.collection, event)
         });
-        vscode.workspace.onDidOpenTextDocument((event) => {
-            this._document(event.document);
+        vscode.window.onDidChangeVisibleTextEditors((event) => {
+            for (let i = 0; i < event.length; ++i) {
+                if (event[i].document.fileName.match(/(ez80|z80|asm)$/)) {
+                    setTimeout(() => { this.diagnostics(event[i].document, this.collection) }, 100);
+                }
+            }
         });
         const watcher = vscode.workspace.createFileSystemWatcher("**/*.{ez80,z80,inc,asm}");
         watcher.onDidChange((uri) => {
@@ -80,6 +83,12 @@ class ASMSymbolDocumenter {
         watcher.onDidDelete((uri) => {
             delete this.files[uri.fsPath];
         });
+        if (vscode.window.activeTextEditor) {
+            let startingDoc = vscode.window.activeTextEditor.document
+            if (startingDoc.fileName.match(/ez80|z80|asm/)) {
+                setTimeout(() => { this.diagnostics(startingDoc, this.collection) }, 1000);
+            }
+        }
     }
     _resolveFilename(filename, fsRelativeDir) {
         // Try just sticking the filename onto the directory.
@@ -230,14 +239,12 @@ class ASMSymbolDocumenter {
         let commentBuffer = [];
         let startLine = 0
         let endLine = document.lineCount
-        if (event) {
-            if (event.document === document) {
-                let lines = 1
-                startLine = event.contentChanges[0].range.start.line - 2
-                lines = (event.contentChanges[0].text.match(/\n/g)||[]).length + 2
-                endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
-                table = this.files[document.uri.fsPath];
-            }
+        if (event && event.document === document) {
+            let lines = 1
+            startLine = event.contentChanges[0].range.start.line - 2
+            lines = (event.contentChanges[0].text.match(/\n/g) || []).length + 2
+            endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
+            table = this.files[document.uri.fsPath];
         }
         this.files[document.uri.fsPath] = table;
         if (event) {
@@ -245,7 +252,6 @@ class ASMSymbolDocumenter {
             for (var symName in table.symbols) {
                 let symrange = table.symbols[symName].location.range
                 if (inter.intersection(symrange)) {
-                    
                     delete table.symbols[symName];
                 }
             }
@@ -266,6 +272,14 @@ class ASMSymbolDocumenter {
                 if (includeLineMatch) {
                     const filename = includeLineMatch[1];
                     table.includedFiles.push(filename);
+                    const fsRelativeDir = path.dirname(document.uri.fsPath);
+                    this._resolveFilename(filename, fsRelativeDir); // this actually documents any included files, pretty cool
+                    // let fileURI = new vscode.Uri("file", "", includedFSPath, "", "");
+                    // vscode.workspace.openTextDocument(fileURI).then((incdocument) => {
+                    //     if (!this.files[incdocument.uri.fsPath]) {
+                    //         this._document(incdocument);
+                    //     }
+                    // });
                 }
                 else if (labelMatch) {
                     const declaration = labelMatch[1];
@@ -320,14 +334,19 @@ class ASMSymbolDocumenter {
         // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
         // }
     }
-    diagnostics(document, collection) {
+    diagnostics(document, collection, event) {
         collection.clear();
         let diagnosticsArray = [];
         const symbols = this.symbols(document);
-
-
-
-        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+        let startLine = 0
+        let endLine = document.lineCount
+        if (event && event.document === document) {
+            let lines = 1
+            startLine = event.contentChanges[0].range.start.line - 2
+            lines = (event.contentChanges[0].text.match(/\n/g) || []).length + 2
+            endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
+        }
+        for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
             const invalidOperands = "Invalid Operands"
             const unknownOpcode = "Unknown Opcode"
             let errorCode = invalidOperands

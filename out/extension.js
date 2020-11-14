@@ -20,6 +20,7 @@ function activate(context) {
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
     context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider('ez80-asm', new semanticTokens.ASMSemanticTokenProvider(symbolDocumenter, legend), legend));
     context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', new completionProposer.ASMCompletionProposer(symbolDocumenter)));
+    setTimeout(() => {context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider('ez80-asm', new semanticTokens.ASMSemanticTokenProvider(symbolDocumenter, legend), legend))}, 1001)
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated

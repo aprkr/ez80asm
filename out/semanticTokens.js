@@ -9,7 +9,7 @@ class ASMSemanticTokenProvider {
     }
     provideDocumentSemanticTokens(document, token) {
         const wordregex = /\b\w+\.?\w+\b/g
-        const commentregex = /.+;/g
+        const commentregex = /^.*?;/g
         // const tokenTypes = ['function', 'variable', 'class', 'label'];
         // const tokenModifiers = ['declaration'];
         // const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
@@ -19,7 +19,7 @@ class ASMSemanticTokenProvider {
         for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
             const line = document.lineAt(lineNumber);
             let nonCommentMatch = line.text.match(commentregex);
-            if (nonCommentMatch || (!line.text.includes(";") && line.text.length > 0)) {
+            if ((nonCommentMatch && nonCommentMatch !== ";") || (!line.text.includes(";") && line.text.length > 0)) {
                 if (nonCommentMatch) {
                     nonCommentMatch = nonCommentMatch[0];
                 } else {

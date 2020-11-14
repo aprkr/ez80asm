@@ -15,7 +15,8 @@
 		"vscode": "^1.0.0"
 	},
 	"activationEvents": [
-		"onLanguage:ez80-asm"
+		"onLanguage:ez80-asm",
+		"workspaceContains:**/*.{ez80,z80,inc,asm}"
 	],
 	"main": "./out/extension.js",
 	"categories": [
