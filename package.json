@@ -38,7 +38,8 @@
 				"extensions": [
 					".asm",
 					".z80",
-					".ez80"
+					".ez80",
+					".inc"
 				],
 				"configuration": "./ez80-asm.language-configuration.json"
 			}
@@ -99,6 +100,11 @@
 							"string"
 						],
 						"default": []
+					},
+					"ez80-asm.diagnosticProvider": {
+						"description": "Highlight errors while you type",
+						"type": "boolean",
+						"default": true
 					}
 
 				}

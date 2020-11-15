@@ -341,6 +341,9 @@ class ASMSymbolDocumenter {
         let collection = this.collections[document.fileName]
         collection.clear()
         let diagnosticsArray = []
+        if (!vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
+            return
+        }
         const symbols = this.symbols(document);
         for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
             const invalidOperands = "Invalid Operands"
