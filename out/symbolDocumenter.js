@@ -39,6 +39,13 @@ class FileTable {
         this.scopes = [];
     }
 }
+class diagnosticStuff {
+    constructor(documenturi) {
+        this.uri = documenturi;
+        this.collection = vscode.languages.createDiagnosticCollection();
+        this.diagnosticsArray = [];
+    }
+}
 var SearchMode;
 (function (SearchMode) {
     SearchMode[SearchMode["globals"] = 0] = "globals";
@@ -51,7 +58,9 @@ class ASMSymbolDocumenter {
         this.ASMCompletionProposer = new completionProposer.ASMCompletionProposer
         this.instructionItemsFull = this.ASMCompletionProposer.instructionItemsFull
         this.collection = vscode.languages.createDiagnosticCollection();
-        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 7).then((files) => {
+        this.collectionArray = []
+        this.diagnostics = {}
+        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 5).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
                     this._document(document);
@@ -60,12 +69,15 @@ class ASMSymbolDocumenter {
         });
         vscode.workspace.onDidChangeTextDocument((event) => {
             this._document(event.document, event);
-            this.diagnostics(event.document, this.collection, event)
+            let collection = this.collectionArray.find(collections => collections.name === event.document.fileName)
+            this.getDiagnostics(event.document, event)
+            // this.diagnostics(event.document, this.collection, event)
         });
         vscode.window.onDidChangeVisibleTextEditors((event) => {
             for (let i = 0; i < event.length; ++i) {
                 if (event[i].document.fileName.match(/(ez80|z80|asm)$/)) {
-                    setTimeout(() => { this.diagnostics(event[i].document, this.collection) }, 100);
+                    let collection = this.collectionArray.find(collections => collections.name === event[i].document.fileName)
+                    setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
                 }
             }
         });
@@ -86,7 +98,7 @@ class ASMSymbolDocumenter {
         if (vscode.window.activeTextEditor) {
             let startingDoc = vscode.window.activeTextEditor.document
             if (startingDoc.fileName.match(/ez80|z80|asm/)) {
-                setTimeout(() => { this.diagnostics(startingDoc, this.collection) }, 1000);
+                setTimeout(() => { this.getDiagnostics(startingDoc) }, 1000);
             }
         }
     }
@@ -234,6 +246,9 @@ class ASMSymbolDocumenter {
         buffer.push(line);
     }
     _document(document, event) {
+        if (!this.diagnostics[document.fileName]) {
+            this.diagnostics[document.fileName] = new diagnosticStuff(document.uri)
+        }
         let table = new FileTable(document.uri.fsPath);
         // let currentScope = undefined;
         let commentBuffer = [];
@@ -334,9 +349,10 @@ class ASMSymbolDocumenter {
         // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
         // }
     }
-    diagnostics(document, collection, event) {
-        collection.clear();
-        let diagnosticsArray = [];
+    getDiagnostics(document, event) {
+        let collection = this.diagnostics[document.fileName].collection
+        collection.clear()
+        let diagnosticsArray = this.diagnostics[document.fileName].diagnosticsArray;
         const symbols = this.symbols(document);
         let startLine = 0
         let endLine = document.lineCount
@@ -437,7 +453,7 @@ class ASMSymbolDocumenter {
                             break
                         }
                         let test = "";
-                        if (wordmatch[i].match(/(\$[0-9A-Fa-f]+|[0-9]+)/)) {
+                        if (wordmatch[i].match(/(\$[0-9A-Fa-f]+|[0-9]+)\b/)) {
                             test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
                             if (this.instructionItemsFull.indexOf(test) != -1) {
                                 match = true
