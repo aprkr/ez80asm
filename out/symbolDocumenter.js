@@ -39,13 +39,6 @@ class FileTable {
         this.scopes = [];
     }
 }
-class diagnosticStuff {
-    constructor(documenturi) {
-        this.uri = documenturi;
-        this.collection = vscode.languages.createDiagnosticCollection();
-        this.diagnosticsArray = [];
-    }
-}
 var SearchMode;
 (function (SearchMode) {
     SearchMode[SearchMode["globals"] = 0] = "globals";
@@ -57,9 +50,7 @@ class ASMSymbolDocumenter {
         this.files = {};
         this.ASMCompletionProposer = new completionProposer.ASMCompletionProposer
         this.instructionItemsFull = this.ASMCompletionProposer.instructionItemsFull
-        this.collection = vscode.languages.createDiagnosticCollection();
-        this.collectionArray = []
-        this.diagnostics = {}
+        this.collections = {}
         vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 5).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
@@ -69,14 +60,11 @@ class ASMSymbolDocumenter {
         });
         vscode.workspace.onDidChangeTextDocument((event) => {
             this._document(event.document, event);
-            let collection = this.collectionArray.find(collections => collections.name === event.document.fileName)
-            this.getDiagnostics(event.document, event)
-            // this.diagnostics(event.document, this.collection, event)
-        });
+            this.getDiagnostics(event.document)
+                });
         vscode.window.onDidChangeVisibleTextEditors((event) => {
             for (let i = 0; i < event.length; ++i) {
                 if (event[i].document.fileName.match(/(ez80|z80|asm)$/)) {
-                    let collection = this.collectionArray.find(collections => collections.name === event[i].document.fileName)
                     setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
                 }
             }
@@ -246,8 +234,8 @@ class ASMSymbolDocumenter {
         buffer.push(line);
     }
     _document(document, event) {
-        if (!this.diagnostics[document.fileName]) {
-            this.diagnostics[document.fileName] = new diagnosticStuff(document.uri)
+        if (!this.collections[document.fileName]) {
+            this.collections[document.fileName] = vscode.languages.createDiagnosticCollection();
         }
         let table = new FileTable(document.uri.fsPath);
         // let currentScope = undefined;
@@ -349,20 +337,12 @@ class ASMSymbolDocumenter {
         // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
         // }
     }
-    getDiagnostics(document, event) {
-        let collection = this.diagnostics[document.fileName].collection
+    getDiagnostics(document) {
+        let collection = this.collections[document.fileName]
         collection.clear()
-        let diagnosticsArray = this.diagnostics[document.fileName].diagnosticsArray;
+        let diagnosticsArray = []
         const symbols = this.symbols(document);
-        let startLine = 0
-        let endLine = document.lineCount
-        if (event && event.document === document) {
-            let lines = 1
-            startLine = event.contentChanges[0].range.start.line - 2
-            lines = (event.contentChanges[0].text.match(/\n/g) || []).length + 2
-            endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
-        }
-        for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
+        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
             const invalidOperands = "Invalid Operands"
             const unknownOpcode = "Unknown Opcode"
             let errorCode = invalidOperands
@@ -453,7 +433,7 @@ class ASMSymbolDocumenter {
                             break
                         }
                         let test = "";
-                        if (wordmatch[i].match(/(\$[0-9A-Fa-f]+|[0-9]+)\b/)) {
+                        if (wordmatch[i].match(/(^[0-9]+$)|(^[0-9a-fA-F]+h$)|(^(\$|0x)[0-9a-fA-F]+$)|(^\%[01]+$)|(^[01]+b$)/)) {
                             test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
                             if (this.instructionItemsFull.indexOf(test) != -1) {
                                 match = true
