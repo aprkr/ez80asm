@@ -21,10 +21,16 @@ The (E)Z80 Assembly extension for Visual Studio provides language support for EZ
 * Configure a global include directory in settings to automatically search for symbols and documentation
 * Directory format can be parent/folder or parent\\\\folder
 * Directories can be absolute or relative to the workspace
-* Note that removing a directory will require VS Code to restart to reflect changes
+* Note that changing this setting may require VS Code to reload to reflect changes
 
-### Possible Future Features
-* Semantic highlighting, to distinguish equates and functions
+### Semantic Highlighting
+* Helps to distinguish functions(with ":"), labels (without ":"), and macros
+* Make sure you have semantic highlighting on in settings
+
+### Diagnostic Provider
+* Error checking while you type
+* Is in early stages, so will miss some errors or possibly incorrectly label errors
+* Disable in settings
 
 ### License
 This project is subject to [these terms](https://github.com/LiberalEater/ez80asm/blob/main/LICENSE.txt).

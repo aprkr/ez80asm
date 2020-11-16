@@ -16,7 +16,7 @@
 
 		<dict>
 			<key>match</key>			
-			<string>(ix\/y(\+d)?|IX\/Y(\+D)?|\+d|\+D)</string>
+			<string>(ix\/y(\+d\))?|IX\/Y(\+D\))?|\+d\)|\+D\))</string>
 			<key>name</key>
 			<string>invalid</string>
 		</dict>

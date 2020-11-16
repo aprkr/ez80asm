@@ -11,7 +11,7 @@ const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
 const completionProposer = require("./completion");
 const wordregex = /\b\S+(\.\w+)?(\s?[\+|\-|\*|\/]\s?\S+)?\b/g
-const wordregex2 = /(^(\S+)\s(\S+))\b(\)?\s?,\s?(.+))?/
+const wordregex2 = /(^(\S+)\s([^\r\n\t\f\v ,]+))\b(\)?\s?,\s?(.+))?/
 const commentregex = /.+?;/g
 const offsetregex = /(\s?[\+|\-|\*|\/]\s?\S+)(.+)?/
 // class ScopeDescriptor {
@@ -51,7 +51,14 @@ class ASMSymbolDocumenter {
         this.ASMCompletionProposer = new completionProposer.ASMCompletionProposer
         this.instructionItemsFull = this.ASMCompletionProposer.instructionItemsFull
         this.collections = {}
-        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 5).then((files) => {
+        vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
+            files.forEach((fileURI) => {
+                vscode.workspace.openTextDocument(fileURI).then((document) => {
+                    this._document(document);
+                });
+            });
+        });
+        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 2).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
                     this._document(document);
@@ -61,24 +68,27 @@ class ASMSymbolDocumenter {
         var diagnosticTimeout = 0
         var _documentTimeout = 0;
         vscode.workspace.onDidChangeTextDocument((event) => {
-            clearTimeout(diagnosticTimeout)
-            clearTimeout(_documentTimeout)
-            _documentTimeout = setTimeout(() => { this._document(event.document)}, 100);
-            diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document) }, 200);    
+            if (event.document.fileName.match(/(ez80|z80|inc|asm)$/)) {
+                clearTimeout(diagnosticTimeout)
+                clearTimeout(_documentTimeout)
+                _documentTimeout = setTimeout(() => { this._document(event.document) }, 100);
+                diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document) }, 200);
+            }
         });
         vscode.window.onDidChangeVisibleTextEditors((event) => {
             for (let i = 0; i < event.length; ++i) {
-                if (event[i].document.fileName.match(/(ez80|z80|asm)$/)) {
+                if (event[i].document.fileName.match(/(ez80|z80|inc|asm)$/)) {
+                    this._document(event[i].document);
                     setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
                 }
             }
         });
         const watcher = vscode.workspace.createFileSystemWatcher("**/*.{ez80,z80,inc,asm}");
-        watcher.onDidChange((uri) => {
-            vscode.workspace.openTextDocument(uri).then((document) => {
-                this._document(document);
-            });
-        });
+        // watcher.onDidChange((uri) => {
+        //     vscode.workspace.openTextDocument(uri).then((document) => {
+        //         this._document(document);
+        //     });
+        // });
         watcher.onDidCreate((uri) => {
             vscode.workspace.openTextDocument(uri).then((document) => {
                 this._document(document);
@@ -98,6 +108,13 @@ class ASMSymbolDocumenter {
         // Try just sticking the filename onto the directory.
         let simpleJoin = path.resolve(fsRelativeDir, filename);
         if (fs.existsSync(simpleJoin)) {
+            let includeUri = vscode.Uri.file(simpleJoin);
+            const table = this.files[includeUri.fsPath]; // this.files is very picky
+            if (table == undefined) {
+                vscode.workspace.openTextDocument(includeUri).then((document) => {
+                    this._document(document);
+                });
+            }
             return simpleJoin;
         }
         // Grab the configured include paths. If it's a string, make it an array.
@@ -381,6 +398,9 @@ class ASMSymbolDocumenter {
                     const wordmatch = wordregex2.exec(nonCommentMatch);
                     nonCommentMatch = nonCommentMatch.toLowerCase();
                     nonCommentMatch = nonCommentMatch.replace(" ,", ",");
+                    if (nonCommentMatch.match(/\w,\w/)) {
+                        nonCommentMatch = nonCommentMatch.replace(",", ", ");
+                    }
                     if (nonCommentMatch.includes(".")) {
                         nonCommentMatch = nonCommentMatch.replace(".lil ", " ");
                         nonCommentMatch = nonCommentMatch.replace(".sil ", " ");
