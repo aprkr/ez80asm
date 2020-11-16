@@ -38,7 +38,10 @@ class ASMHoverProvider {
                 numberValue = parseInt(text);
             }
             if (numberValue !== undefined) {
-                return new vscode.Hover(`\`${numberValue}\`\n\n\`\$${numberValue.toString(16)}\`\n\n\`%${numberValue.toString(2)}\``, range);
+                let hoverText = new vscode.MarkdownString();
+                hoverText.appendCodeblock(numberValue + "\n$" + numberValue.toString(16) + "\n%" + numberValue.toString(2))
+                return new vscode.Hover(hoverText, range)
+                // return new vscode.Hover(`\`${numberValue}\`\n\n\`\$${numberValue.toString(16)}\`\n\n\`%${numberValue.toString(2)}\``, range);
             }
         }
         return null;

@@ -41,7 +41,7 @@
 		<!--Directives-->
 		<dict>
 			<key>match</key>
-			<string>^#\S*</string> <!--""^" is anchor from beginning of line, #" is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
+			<string>#\S*</string> <!--""^" is anchor from beginning of line, #" is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
 			<key>name</key>
 			<string>keyword.control.directive.ez80</string>
 		</dict>

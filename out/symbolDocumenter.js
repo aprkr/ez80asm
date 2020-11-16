@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
-const includeLineRegex = /^\#?include[\W]+"([^"]+)".*$/i;
+const includeLineRegex = /\#?include[\W]+"([^"]+)".*$/i;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
@@ -58,10 +58,14 @@ class ASMSymbolDocumenter {
                 });
             });
         });
+        var diagnosticTimeout = 0
+        var _documentTimeout = 0;
         vscode.workspace.onDidChangeTextDocument((event) => {
-            this._document(event.document, event);
-            this.getDiagnostics(event.document)
-                });
+            clearTimeout(diagnosticTimeout)
+            clearTimeout(_documentTimeout)
+            _documentTimeout = setTimeout(() => { this._document(event.document)}, 100);
+            diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document) }, 200);    
+        });
         vscode.window.onDidChangeVisibleTextEditors((event) => {
             for (let i = 0; i < event.length; ++i) {
                 if (event[i].document.fileName.match(/(ez80|z80|asm)$/)) {
@@ -86,7 +90,7 @@ class ASMSymbolDocumenter {
         if (vscode.window.activeTextEditor) {
             let startingDoc = vscode.window.activeTextEditor.document
             if (startingDoc.fileName.match(/ez80|z80|asm/)) {
-                setTimeout(() => { this.getDiagnostics(startingDoc) }, 1000);
+                setTimeout(() => { this.getDiagnostics(startingDoc) }, 1500);
             }
         }
     }
@@ -244,7 +248,7 @@ class ASMSymbolDocumenter {
         let endLine = document.lineCount
         if (event && event.document === document) {
             let lines = 1
-            startLine = event.contentChanges[0].range.start.line - 2
+            startLine = Math.max(event.contentChanges[0].range.start.line - 2, 0)
             lines = (event.contentChanges[0].text.match(/\n/g) || []).length + 2
             endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
             table = this.files[document.uri.fsPath];
@@ -274,15 +278,11 @@ class ASMSymbolDocumenter {
                 const labelMatch = labelDefinitionRegex.exec(line.text);
                 if (includeLineMatch) {
                     const filename = includeLineMatch[1];
-                    table.includedFiles.push(filename);
+                    if (table.includedFiles.indexOf(filename) == -1) {
+                        table.includedFiles.push(filename);
+                    }
                     const fsRelativeDir = path.dirname(document.uri.fsPath);
-                    this._resolveFilename(filename, fsRelativeDir); // this actually documents any included files, pretty cool
-                    // let fileURI = new vscode.Uri("file", "", includedFSPath, "", "");
-                    // vscode.workspace.openTextDocument(fileURI).then((incdocument) => {
-                    //     if (!this.files[incdocument.uri.fsPath]) {
-                    //         this._document(incdocument);
-                    //     }
-                    // });
+                    this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
                 }
                 else if (labelMatch) {
                     const declaration = labelMatch[1];
@@ -327,11 +327,9 @@ class ASMSymbolDocumenter {
                     }
                     table.symbols[name] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
                     table.symbols[name].lowercase = name.toLowerCase();
-                    // this.lowercase.symbols[name.toLowerCase()] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
                 }
                 commentBuffer = [];
             }
-
         }
         // if (currentScope) {
         // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
@@ -353,8 +351,16 @@ class ASMSymbolDocumenter {
             const commentLineMatch = commentLineRegex.exec(line.text);
             const includeLineMatch = includeLineRegex.exec(line.text);
             const labelMatch = labelDefinitionRegex.exec(line.text);
-            if (commentLineMatch || includeLineMatch || labelMatch) {
+            if (commentLineMatch || labelMatch) {
                 continue
+            } else if (includeLineMatch) {
+                const filename = includeLineMatch[1];
+                const fsRelativeDir = path.dirname(document.uri.fsPath);
+                if (this._resolveFilename(filename, fsRelativeDir) === "") {
+                    const endChar = includeLineMatch[0].length;
+                    const range = new vscode.Range(lineNumber, 0, lineNumber, endChar)
+                    diagnosticsArray.push(new vscode.Diagnostic(range, "File not found"));
+                }
             } else {
                 let nonCommentMatch = line.text.match(commentregex);
                 if (nonCommentMatch != null || (!line.text.includes(";") && line.text.length > 0)) {
