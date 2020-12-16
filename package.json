@@ -56,11 +56,6 @@
 				"type": "object",
 				"title": "EZ80 Assembly",
 				"properties": {
-					"ez80-asm.includeAllDocCommentNewlines": {
-						"description": "Makes every line of comments in a doc comment carry through a newline literal in the output Markdown.",
-						"type": "boolean",
-						"default": true
-					},
 					"ez80-asm.includePath": {
 						"description": "Specifies folder paths to search for include files.",
 						"type": [

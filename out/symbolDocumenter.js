@@ -5,10 +5,11 @@ const path = require("path");
 const fs = require("fs");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
-const includeLineRegex = /\#?include[\W]+"([^"]+)".*$/i;
+const includeLineRegex = /^\#?(include|INCLUDE)[\W]+"([^"]+)".*$/i;
+const FILE_NAME = 2;
 const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
-const defineExpressionRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
+const equateRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
 const completionProposer = require("./completion");
 const wordregex = /\b\S+(\.\w+)?(\s?[\+|\-|\*|\/]\s?\S+)?\b/g
 const wordregex2 = /(^(\S+)\s([^\r\n\t\f\v ,]+))\b(\)?\s?,\s?(.+))?/
@@ -33,10 +34,12 @@ class SymbolDescriptor {
 class FileTable {
     constructor(fsPath) {
         this.includedFiles = [];
+        this.includeFileLines = [];
         this.fsDir = path.dirname(fsPath);
         this.fsPath = fsPath;
         this.symbols = {};
-        this.scopes = [];
+        this.referencedSymbols = [];
+        // this.scopes = [];
     }
 }
 var SearchMode;
@@ -54,31 +57,31 @@ class ASMSymbolDocumenter {
         vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
-                    this._document(document);
+                    this.document(document);
                 });
             });
         });
         vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 2).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
-                    this._document(document);
+                    this.document(document);
                 });
             });
         });
         var diagnosticTimeout = 0
-        var _documentTimeout = 0;
+        var documenttimeout = 0;
         vscode.workspace.onDidChangeTextDocument((event) => {
             if (event.document.fileName.match(/(ez80|z80|inc|asm)$/)) {
                 clearTimeout(diagnosticTimeout)
-                clearTimeout(_documentTimeout)
-                _documentTimeout = setTimeout(() => { this._document(event.document) }, 100);
-                diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document) }, 200);
+                clearTimeout(documenttimeout)
+                documenttimeout = setTimeout(() => { this.document(event.document, event) }, 100);
+                diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document, event) }, 200);
             }
         });
         vscode.window.onDidChangeVisibleTextEditors((event) => {
             for (let i = 0; i < event.length; ++i) {
                 if (event[i].document.fileName.match(/(ez80|z80|inc|asm)$/)) {
-                    this._document(event[i].document);
+                    this.document(event[i].document);
                     setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
                 }
             }
@@ -91,7 +94,7 @@ class ASMSymbolDocumenter {
         // });
         watcher.onDidCreate((uri) => {
             vscode.workspace.openTextDocument(uri).then((document) => {
-                this._document(document);
+                this.document(document);
             });
         });
         watcher.onDidDelete((uri) => {
@@ -100,7 +103,7 @@ class ASMSymbolDocumenter {
         if (vscode.window.activeTextEditor) {
             let startingDoc = vscode.window.activeTextEditor.document
             if (startingDoc.fileName.match(/ez80|z80|asm/)) {
-                setTimeout(() => { this.getDiagnostics(startingDoc) }, 1500);
+                setTimeout(() => { this.getDiagnostics(startingDoc) }, 2000);
             }
         }
     }
@@ -112,7 +115,7 @@ class ASMSymbolDocumenter {
             const table = this.files[includeUri.fsPath]; // this.files is very picky
             if (table == undefined) {
                 vscode.workspace.openTextDocument(includeUri).then((document) => {
-                    this._document(document);
+                    this.document(document);
                 });
             }
             return simpleJoin;
@@ -138,7 +141,7 @@ class ASMSymbolDocumenter {
                 const table = this.files[includeUri.fsPath]; // this.files is very picky
                 if (table == undefined) {
                     vscode.workspace.openTextDocument(includeUri).then((document) => {
-                        this._document(document);
+                        this.document(document);
                     });
                 }
                 return joined;
@@ -245,29 +248,25 @@ class ASMSymbolDocumenter {
     symbol(name, searchContext) {
         return this.symbols(searchContext)[name];
     }
-    _pushDocumentationLine(line, buffer) {
-        if ((line.indexOf("@") == 0 || vscode.workspace.getConfiguration().get("ez80-asm.includeAllDocCommentNewlines")) && buffer.length > 0) {
-            let lastLine = buffer[buffer.length - 1];
-            if (lastLine.lastIndexOf("  ") != lastLine.length - 2) {
-                buffer[buffer.length - 1] = lastLine + "  ";
-            }
-        }
-        buffer.push(line);
-    }
-    _document(document, event) {
+    /**
+     * 
+     * @param {*} document the document to create symbols for
+     * @param {*} event if used, will restrict the documenting to a certain range to speed things up
+     */
+    document(document, event) {
         if (!this.collections[document.fileName]) {
             this.collections[document.fileName] = vscode.languages.createDiagnosticCollection();
         }
         let table = new FileTable(document.uri.fsPath);
-        // let currentScope = undefined;
-        let commentBuffer = [];
-        let startLine = 0
-        let endLine = document.lineCount
+        let startLine = 0;
+        let endLine = document.lineCount;
         if (event && event.document === document) {
-            let lines = 1
-            startLine = Math.max(event.contentChanges[0].range.start.line - 2, 0)
-            lines = (event.contentChanges[0].text.match(/\n/g) || []).length + 2
-            endLine = Math.min(event.contentChanges[0].range.end.line + lines, document.lineCount)
+            startLine = Math.max(event.contentChanges[0].range.start.line - 1, 0)
+            endLine = Math.min(startLine + 2, document.lineCount - 1)
+            while (commentLineRegex.exec(document.lineAt(endLine).text) && endLine < document.lineCount) {
+                endLine++
+            }
+            endLine++
             table = this.files[document.uri.fsPath];
         }
         this.files[document.uri.fsPath] = table;
@@ -282,85 +281,53 @@ class ASMSymbolDocumenter {
         }
         for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
             const line = document.lineAt(lineNumber);
+            if (line.text === "") {
+                continue;
+            }
             const commentLineMatch = commentLineRegex.exec(line.text);
             if (commentLineMatch) {
-                const baseLine = commentLineMatch[1];
-                if (spacerRegex.test(baseLine)) {
-                    continue;
-                }
-                this._pushDocumentationLine(baseLine, commentBuffer);
+                continue;
             }
-            else {
-                const includeLineMatch = includeLineRegex.exec(line.text);
-                const labelMatch = labelDefinitionRegex.exec(line.text);
-                if (includeLineMatch) {
-                    const filename = includeLineMatch[1];
-                    if (table.includedFiles.indexOf(filename) == -1) {
-                        table.includedFiles.push(filename);
-                    }
-                    const fsRelativeDir = path.dirname(document.uri.fsPath);
-                    this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
+            const includeLineMatch = includeLineRegex.exec(line.text);
+            const labelMatch = labelDefinitionRegex.exec(line.text);
+            if (includeLineMatch) {
+                const filename = includeLineMatch[FILE_NAME];
+                if (table.includedFiles.indexOf(filename) == -1) {
+                    table.includedFiles.push(filename);
                 }
-                else if (labelMatch) {
-                    const declaration = labelMatch[1];
-                    // if (instructionRegex.test(declaration)) {
-                    // continue;
-                    // }
-                    // if (keywordRegex.test(declaration)) {
-                    // continue;
-                    // }
-                    // if (declaration.indexOf(".") == -1) {
-                    //     if (currentScope) {
-                    //         currentScope.end = document.positionAt(document.offsetAt(line.range.start) - 1);
-                    //     }
-                    //     currentScope = new ScopeDescriptor(line.range.start);
-                    //     table.scopes.push(currentScope);
-                    // }
-                    let kind = undefined;
-                    // const isFunction = declaration.indexOf(":") != -1;
-                    if (declaration.indexOf(":") != -1) {
-                        kind = vscode.SymbolKind.Method;
-                    }
-                    const name = declaration.replace(/:+/, "");
-                    const endChar = line.range.start.character + name.length;
-                    const endposition = new vscode.Position(lineNumber, endChar);
-                    const declarationrange = new vscode.Range(line.range.start, endposition)
-                    const location = new vscode.Location(document.uri, declarationrange);
-                    // const isExported = declaration.indexOf("::") != -1;
-                    // const isLocal = declaration.indexOf(".") != -1;
-                    let documentation = undefined;
-                    const endCommentMatch = endCommentRegex.exec(line.text);
-                    if (endCommentMatch) {
-                        this._pushDocumentationLine(endCommentMatch[1], commentBuffer);
-                    }
-                    if (defineExpressionRegex.test(line.text)) {
-                        const trimmed = line.text.replace(/[\s]+/, " ");
-                        const withoutComment = trimmed.replace(/;.*$/, "");
-                        commentBuffer.splice(0, 0, `${withoutComment}`);
-                        kind = vscode.SymbolKind.Variable
-                    }
-                    if (commentBuffer.length > 0) {
-                        documentation = commentBuffer.join("\n");
-                    }
-                    table.symbols[name] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
-                    table.symbols[name].lowercase = name.toLowerCase();
+                const fsRelativeDir = path.dirname(document.uri.fsPath);
+                this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
+            } else if (labelMatch) {
+                const declaration = labelMatch[1];
+                let kind = undefined;
+                if (declaration.indexOf(":") != -1) {
+                    kind = vscode.SymbolKind.Method;
+                } else if (equateRegex.test(line.text)) {
+                    kind = vscode.SymbolKind.Variable
                 }
-                commentBuffer = [];
+                const name = declaration.replace(/:+/, "");
+                const endChar = line.range.start.character + name.length;
+                const endposition = new vscode.Position(lineNumber, endChar);
+                const declarationrange = new vscode.Range(line.range.start, endposition)
+                const location = new vscode.Location(document.uri, declarationrange);
+                let documentation = this.getDocumentation(document, lineNumber, kind);
+                table.symbols[name] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
+                table.symbols[name].lowercase = name.toLowerCase();
             }
         }
-        // if (currentScope) {
-        // currentScope.end = document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end;
-        // }
+
     }
-    getDiagnostics(document) {
+    getDiagnostics(document, event) {
         let collection = this.collections[document.fileName]
         collection.clear()
         let diagnosticsArray = []
         if (!vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
             return
         }
+        let startLine = 0;
+        let endLine = document.lineCount;
         const symbols = this.symbols(document);
-        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+        for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
             const invalidOperands = "Invalid Operands"
             const unknownOpcode = "Unknown Opcode"
             let errorCode = invalidOperands
@@ -371,7 +338,7 @@ class ASMSymbolDocumenter {
             if (commentLineMatch || labelMatch) {
                 continue
             } else if (includeLineMatch) {
-                const filename = includeLineMatch[1];
+                const filename = includeLineMatch[FILE_NAME];
                 const fsRelativeDir = path.dirname(document.uri.fsPath);
                 if (this._resolveFilename(filename, fsRelativeDir) === "") {
                     const endChar = includeLineMatch[0].length;
@@ -525,6 +492,39 @@ class ASMSymbolDocumenter {
             }
         }
         collection.set(document.uri, diagnosticsArray);
+    }
+    getDocumentation(document, lineNumber, kind) {
+        if (lineNumber == 0) {
+            return undefined
+        }
+        let line = document.lineAt(lineNumber);
+        let documentation = undefined;
+        let commentBuffer = [];
+        const endCommentMatch = endCommentRegex.exec(line.text);
+        if (endCommentMatch) {
+            commentBuffer.push(endCommentMatch[1]);
+        }
+        const trimmed = line.text.replace(/[\s]+/, " ");
+        const withoutComment = trimmed.replace(/;.*$/, "");
+        lineNumber--
+        line = document.lineAt(lineNumber);
+        let commentLineMatch = commentLineRegex.exec(line.text);
+        while (commentLineMatch && commentLineMatch[1] && lineNumber >= 0) {
+            commentBuffer.unshift(commentLineMatch[1]);
+            lineNumber--
+            if (lineNumber >= 0) {
+                line = document.lineAt(lineNumber);
+                commentLineMatch = commentLineRegex.exec(line.text);
+            }
+        }
+        if (kind == vscode.SymbolKind.Variable) {
+            commentBuffer.unshift(withoutComment)
+        }
+        if (commentBuffer.length > 0) {
+            documentation = commentBuffer.join("\n");
+        }
+        return documentation;
+
     }
 }
 exports.ASMSymbolDocumenter = ASMSymbolDocumenter;

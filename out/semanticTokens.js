@@ -2,6 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 
+class SymbolRef {
+    constructor (name, location, lineNumber) {
+        this.name = name;
+        this.location = location;
+        this.lineNumber = lineNumber;
+    }
+}
 class ASMSemanticTokenProvider {
     constructor(symbolDocumenter, legend) {
         this.symbolDocumenter = symbolDocumenter;
@@ -10,12 +17,10 @@ class ASMSemanticTokenProvider {
     provideDocumentSemanticTokens(document, token) {
         const wordregex = /\b\w+\.?\w+\b/g
         const commentregex = /^.*?;/g
-        // const tokenTypes = ['function', 'variable', 'class', 'label'];
-        // const tokenModifiers = ['declaration'];
-        // const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
         const legend = this.legend
         const symbols = this.symbolDocumenter.symbols(document);
         const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
+        const table = this.symbolDocumenter.files[document.fileName];
         for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
             const line = document.lineAt(lineNumber);
             let nonCommentMatch = line.text.match(commentregex);
@@ -31,11 +36,12 @@ class ASMSemanticTokenProvider {
                     let char = 0;
                     for (let index = 0; index < wordmatch.length; ++index) {
                         if (symbols[wordmatch[index]] && !wordmatch[index].includes("ld")) {
-                            // let regexp = new RegExp("(\\b|\\s|^)"+wordmatch[index]+"(\\W|\\z|\\b)","g");
-                            // let startChar = nonCommentMatch.search(regexp);
                             const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
                             const endChar = startChar + wordmatch[index].length
                             const range = new vscode.Range(lineNumber, startChar, lineNumber, endChar)
+                            const location = new vscode.Location(document.uri, range);
+                            const symbolRef = new SymbolRef(wordmatch[index], location, lineNumber);
+                            table.referencedSymbols.push(symbolRef);
                             if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Method) {
                                 tokensBuilder.push(range, 'function');
                             } else if (symbols[wordmatch[index]].kind == vscode.SymbolKind.Variable) {
