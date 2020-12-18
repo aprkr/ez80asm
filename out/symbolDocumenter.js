@@ -5,9 +5,9 @@ const path = require("path");
 const fs = require("fs");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
-const includeLineRegex = /^\#?(include|INCLUDE)[\W]+"([^"]+)".*$/i;
+const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
 const FILE_NAME = 2;
-const spacerRegex = /^\s*(.)\1{3,}\s*$/;
+// const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const equateRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
 const completionProposer = require("./completion");
@@ -68,30 +68,25 @@ class ASMSymbolDocumenter {
                 });
             });
         });
-        var diagnosticTimeout = 0
+        // var diagnosticTimeout = 0
         var documenttimeout = 0;
         vscode.workspace.onDidChangeTextDocument((event) => {
             if (event.document.fileName.match(/(ez80|z80|inc|asm)$/)) {
-                clearTimeout(diagnosticTimeout)
+                // clearTimeout(diagnosticTimeout)
                 clearTimeout(documenttimeout)
                 documenttimeout = setTimeout(() => { this.document(event.document, event) }, 100);
-                diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document, event) }, 200);
+                // diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document, event) }, 200);
             }
         });
         vscode.window.onDidChangeVisibleTextEditors((event) => {
             for (let i = 0; i < event.length; ++i) {
                 if (event[i].document.fileName.match(/(ez80|z80|inc|asm)$/)) {
                     this.document(event[i].document);
-                    setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
+                    // setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
                 }
             }
         });
         const watcher = vscode.workspace.createFileSystemWatcher("**/*.{ez80,z80,inc,asm}");
-        // watcher.onDidChange((uri) => {
-        //     vscode.workspace.openTextDocument(uri).then((document) => {
-        //         this._document(document);
-        //     });
-        // });
         watcher.onDidCreate((uri) => {
             vscode.workspace.openTextDocument(uri).then((document) => {
                 this.document(document);
@@ -103,7 +98,7 @@ class ASMSymbolDocumenter {
         if (vscode.window.activeTextEditor) {
             let startingDoc = vscode.window.activeTextEditor.document
             if (startingDoc.fileName.match(/ez80|z80|asm/)) {
-                setTimeout(() => { this.getDiagnostics(startingDoc) }, 2000);
+                // setTimeout(() => { this.getDiagnostics(startingDoc) }, 2000);
             }
         }
     }
@@ -327,10 +322,10 @@ class ASMSymbolDocumenter {
         let startLine = 0;
         let endLine = document.lineCount;
         const symbols = this.symbols(document);
+        const invalidOperands = "Invalid Operands"
+        const unknownOpcode = "Unknown Opcode"
+        let errorCode = invalidOperands
         for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
-            const invalidOperands = "Invalid Operands"
-            const unknownOpcode = "Unknown Opcode"
-            let errorCode = invalidOperands
             const line = document.lineAt(lineNumber);
             const commentLineMatch = commentLineRegex.exec(line.text);
             const includeLineMatch = includeLineRegex.exec(line.text);

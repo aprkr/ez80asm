@@ -15,6 +15,8 @@ class ASMCompletionProposer {
         this.symbolDocumenter = symbolDocumenter;
         this.instructionItems = [];
         this.instructionItemsFull = [];
+        this.instructionItemsNonForm = [];
+        this.instructionItemsNonFormList = [];
         const extension = vscode.extensions.getExtension("alex-parker.ez80-asm");
         // const instructionsJSONPath = "c:\\Users\\Alex\\Downloads\\ez80asm\\instructions.json"
         const instructionsJSONPath = path.join(extension.extensionPath, "instructions.json");
@@ -58,9 +60,9 @@ class ASMCompletionProposer {
             output.forEach((element) => {
                 let someList = [];
                 someList = replaceStuff(element.name);
-                // let someOtherList = [];
                 for (let i = 0; i < someList.length; ++i) {
                     this.instructionItemsFull = this.instructionItemsFull.concat(replaceStuff(someList[i]));
+                    this.instructionItemsNonForm = this.instructionItemsNonForm.concat(replaceStuff(someList[i]))
                 }
                 function replaceStuff(name) {
                     let runningList = [];
@@ -117,6 +119,7 @@ class ASMCompletionProposer {
                 }
 
 
+                const item2 = new vscode.CompletionItem(element.name, vscode.CompletionItemKind.Snippet);
 
 
                 if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("UPPER")) {
@@ -168,6 +171,7 @@ class ASMCompletionProposer {
                     });
                 }
                 item.documentation = new vscode.MarkdownString(lines.join("  \\\n"));
+                item2.documentation = new vscode.MarkdownString(lines.join("  \\\n"));
                 let insertText = element.name;
                 let tabIndex = 1;
                 insertText = insertText.replace("$", "\\$");
@@ -182,10 +186,13 @@ class ASMCompletionProposer {
                 }
                 if (insertText != element.name) {
                     item.insertText = new vscode.SnippetString(insertText);
+                    item2.insertText = new vscode.SnippetString(insertText);
                 }
                 this.instructionItems.push(item);
+                this.instructionItemsNonFormList.push(item2);
             })
             this.instructionItemsFull = [...new Set(this.instructionItemsFull)]
+            this.instructionItemsNonForm = [...new Set(this.instructionItemsNonForm)]
         });
     }
 
