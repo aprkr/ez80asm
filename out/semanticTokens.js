@@ -3,8 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const completionProposer = require("./completion");
-const wordregex = /(\b\w+\.?\w+\b)/g
-const wordNumberRegex = /(\b\w+\.?\w+?\b)/g
+const wordregex = /(\b\w+(\.\w+)?(\.|\b))/g
 const numberRegex = /((\$|0x)[0-9a-fA-F]+\b)|(\b[0-9a-fA-F]+h\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)/g
 const firstoperandregex = /^\s*[\w\.]+\s+([^\,\r\n\f\v]+)/
 const secondoperandregex = /^.*?,\s*(.*)/
@@ -40,12 +39,10 @@ class ASMSemanticTokenProvider {
         const table = this.symbolDocumenter.files[document.fileName];
         for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
             const line = document.lineAt(lineNumber);
-            let nonCommentMatch = line.text.match(nonCommentRegex)
-            const includeLineMatch = includeLineRegex.exec(line.text);
-            const labelMatch = line.text.match(labelDefinitionRegex)
-            if (labelMatch || line.text === "") {
+            if (line.text === "") {
                 continue;
             }
+            const includeLineMatch = includeLineRegex.exec(line.text);
             if (includeLineMatch) {
                 const filename = includeLineMatch[2];
                 const fsRelativeDir = path.dirname(document.uri.fsPath);
@@ -56,110 +53,64 @@ class ASMSemanticTokenProvider {
                 }
                 continue;
             }
+            let nonCommentMatch = line.text.match(nonCommentRegex)
+            const labelMatch = line.text.match(labelDefinitionRegex)
             if (nonCommentMatch) {
                 nonCommentMatch = nonCommentMatch[0].replace(/\".+\"/g, "")
-                let checkLine = nonCommentMatch
-                checkLine = checkLine.replace(/\'.+\'/g, "n");
-                const opcode = checkLine.match(/^\s+(\w+)(\.\w*)?/i)
-                checkLine = checkLine.trim();
-                checkLine = checkLine.replace(numberRegex, "n");
-                let invalid = true
-                const firstOperand = checkLine.match(firstoperandregex) // the actual operand is firstOperand[1]
-                if (checkLine.match(/db|dw|dl|ret|(\#.)/i)) { // ignoring these for now
-                    invalid = false
-                }
-                if (opcode) {
-                    if (opcode[2] && !opcode[2].match(suffixRegex)) {       // if the suffix isn't valid
-                        const endChar = 1 + checkLine.length;
-                        const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
-                        diagnosticsArray.push(new vscode.Diagnostic(range, "bad suffix"));
-                    }
-                    if (!opcode[1].match(opcodeRegex)) {        // if the opcode isn't valid
-                        const endChar = 1 + checkLine.length;
-                        const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
-                        diagnosticsArray.push(new vscode.Diagnostic(range, "bad opcode"));
-                        continue;
-                    } else if (opcode[1].match(noOperandOpcodeRegex)) { // if the opcode doesn't use an operand
-                        if (firstOperand) {
-                            const endChar = 1 + opcode[1].length;
+                if (!labelMatch && vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
+                    let diagline = nonCommentMatch
+                    diagline = diagline.replace(numberRegex, "number");
+                    const diagwordmatch = diagline.match(wordregex);
+                    let opcodeskip = false
+                    let invalid = true
+                    if (!diagline.match(/^\s*(\#|\.)/g)) {      // check the opcode
+                        if (diagwordmatch[0].indexOf(".") != -1 && !diagwordmatch[0].match(suffixRegex)) {       // if the suffix isn't valid
+                            const endChar = 1 + diagline.length;
                             const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
-                            diagnosticsArray.push(new vscode.Diagnostic(range, "No operand needed for this opcode"));
+                            diagnosticsArray.push(new vscode.Diagnostic(range, "bad suffix"));
+                        } else if (diagwordmatch[0].indexOf(".") != -1) {
+                            diagline = diagline.replace(/\.\w+/, "")
+                        }
+                        if (!diagwordmatch[0].match(opcodeRegex)) {        // if the opcode isn't valid
+                            const endChar = 1 + diagline.length;
+                            const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                            diagnosticsArray.push(new vscode.Diagnostic(range, "bad opcode"));
                             continue;
-                        }
-                    }
-                } else {
-                    console.log()
-                }
-                checkLine = checkLine.replace(/\s+/, " ")
-                checkLine = checkLine.replace(/\b(NZ|Z|NC|C)\b/i, "c")
-                if (this.instructionItemsFull.indexOf(checkLine) != -1) {
-                    invalid = false
-                }
-                // let invalidSymbol = false
-                if (firstOperand) { // this should always be true
-                    let operand1 = firstOperand[1];
-                    const secondOperand = checkLine.match(secondoperandregex)
-                    let operand2 = null
-                    if (secondOperand) {
-                        operand2 = secondOperand[1];
-                    }
-                    const wordNumber = checkLine.match(wordNumberRegex)
-                    for (let i = 1; i < wordNumber.length; i++) {
-                        if (symbols[Object.keys(symbols).find(key => key.toLowerCase() === wordNumber[i].toLowerCase())]) {
-                            operand1 = operand1.replace(wordNumber[i], "n");
-                            if (operand2) {
-                                operand2 = operand2.replace(wordNumber[i], "n")
+                        } else if (diagwordmatch[0].match(noOperandOpcodeRegex)) { // if the opcode doesn't use an operand
+                            if (diagwordmatch.length > 1) {
+                                const endChar = 1 + diagline.length;
+                                const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                                diagnosticsArray.push(new vscode.Diagnostic(range, "No operand needed for this opcode"));
+                                continue;
+                            } else {
+                                opcodeskip = true
                             }
                         }
+                    } else {
+                        opcodeskip = true
                     }
-                    let valid = undefined
-                    try {
-                        valid = eval(operand1.replace(/n/g, 1))
-                        let nopar2 = firstOperand[1].match(/(?<=\()(.*)(?=\))/)
-                        if (!nopar2) {
-                            nopar2 = [firstOperand[1]]
-                        }
-                        checkLine = checkLine.replace(nopar2[0], "valid")
-                    } catch (err) {
-                        // invalidSymbol = true
-                    }
-                    if (operand2) {
-                        try {
-                            valid = eval(operand2.replace(/n/g, 1))
-                            let nopar2 = secondOperand[1].match(/(?<=\()(.*)(?=\))/)
-                            if (!nopar2) {
-                                nopar2 = [secondOperand[1]]
+                    if (!opcodeskip) {
+                        for (let i = 1; i < diagwordmatch.length; i++) {    // replace all the symbols with "number"
+                            if (symbols[Object.keys(symbols).find(key => key.toLowerCase() === diagwordmatch[i].toLowerCase())]) {
+                                diagline = diagline.replace(diagwordmatch[i], "number")
                             }
-                            checkLine = checkLine.replace(nopar2[0], "valid")
-                        } catch (err) {
-                            // invalidSymbol = true
                         }
-                    }
-                    checkLine = checkLine.toLowerCase();
-                    let test = checkLine.replace("valid", "mmn")
-                    if (this.instructionItemsFull.indexOf(test) != -1) {
-                        invalid = false
-                    }
-                    test = checkLine.replace("valid", "n")
-                    if (this.instructionItemsFull.indexOf(test) != -1) {
-                        invalid = false
-                    }
-                    if (invalid) {
-                        const endChar = nonCommentMatch.length;
-                        const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
-                        diagnosticsArray.push(new vscode.Diagnostic(range, "duh"));
+                        diagline = this.formatLine(diagline);
+                        let operands = this.getOperands(diagline);
+                        diagline = this.evalOperands(diagline, operands)
+                        invalid = this.testLine(diagline)
+                        if (invalid) {
+                            const endChar = 1 + diagline.length;
+                            const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                            diagnosticsArray.push(new vscode.Diagnostic(range, "Bad operands"));
+                        }
                     }
                 }
-
-
-
-
-
                 const wordmatch = nonCommentMatch.match(wordregex);
                 if (wordmatch) {
                     let char = 0;
                     for (let index = 0; index < wordmatch.length; ++index) {
-                        if (symbols[wordmatch[index]] && !wordmatch[index].includes("ld")) {
+                        if (symbols[wordmatch[index]]) {
                             const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
                             const endChar = startChar + wordmatch[index].length
                             const range = new vscode.Range(lineNumber, startChar, lineNumber, endChar)
@@ -181,6 +132,60 @@ class ASMSemanticTokenProvider {
         }
         collection.set(document.uri, diagnosticsArray)
         return tokensBuilder.build();
+    }
+    formatLine(line) {
+        line = line.toLowerCase();
+        line = line.trim()
+        line = line.replace(/\s+/g, " ")
+        line = line.replace(/\'.+\'/, "number")
+        line = line.replace(/(ix|iy)\s*(\+|\-)\s*number/gi, "ix")
+        line = line.replace(/\s+,/g, ",")
+        return line
+    }
+    getOperands(line) {
+        let operands = []
+        let operand = line.match(firstoperandregex)
+        if (operand) {
+            operands.push(operand[1])
+        }
+        operand = line.match(secondoperandregex)
+        if (operand) {
+            operands.push(operand[1])
+        }
+        return operands
+    }
+    testLine(line) {
+        if (this.instructionItemsFull.indexOf(line) != -1) {
+            return false
+        }
+        let test = line.replace(/\bvalid\b/g, "mmn")
+        if (this.instructionItemsFull.indexOf(test) != -1) {
+            return false
+        }
+        test = line.replace(/\bvalid\b/g, "n")
+        if (this.instructionItemsFull.indexOf(test) != -1) {
+            return false
+        }
+        test = line.replace(/\bvalid\b/g, "bit")
+        if (this.instructionItemsFull.indexOf(test) != -1) {
+            return false
+        }
+        return true
+    }
+    evalOperands(line, operands) {
+        for (let i = 0; i < operands.length; i++) {
+            try {
+                let valid = eval(operands[i].replace(/number/g, 1))
+                let withoutParen = operands[i].match(/(?<=^\()(.*)(?=\)$)/)
+                if (!withoutParen) {
+                    withoutParen = [operands[i]]
+                }
+                let regex = new RegExp(withoutParen[0], "g")
+                line = line.replace(withoutParen[0], "valid")
+            } catch (err) {
+            }
+        }
+        return line
     }
 }
 

@@ -41,14 +41,14 @@
 		<!--Directives-->
 		<dict>
 			<key>match</key>
-			<string>#\S*</string> <!--""^" is anchor from beginning of line, #" is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
+			<string>#\w*</string> <!--""^" is anchor from beginning of line, #" is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
 			<key>name</key>
 			<string>keyword.control.directive.ez80</string>
 		</dict>
 
 		<dict>
 			<key>match</key>
-			<string>\B\.\S*</string> <!--"\B" is to make standing by self, "." is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
+			<string>\B\.\w*</string> <!--"\B" is to make standing by self, "." is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
 			<key>name</key>
 			<string>keyword.control.directive.period.ez80</string>
 		</dict>
@@ -63,7 +63,7 @@
 		<!--Conditionals (NZ, Z etc.)-->
 		<dict>
 			<key>match</key>
-			<string>(?i)\b(Z|NZ|C|NC|P|M|PO|PE)\b</string>
+			<string>(?i)\s(Z|NZ|C|NC|P|M|PO|PE)\b</string>
 			<key>name</key>
 			<string>keyword.conditionals.ez80</string>
 		</dict>
