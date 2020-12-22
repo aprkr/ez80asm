@@ -3,13 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
-const registerRegex = /\b\[?(a|f|b|c|d|e|h|l|af|bc|de|hl|mb|sp|pc)\]?\b/i;
-const itemSplitRegex = /,? /;
-const hexRegex = /(\$[0-9a-f]+)/i;
-const includeRegex = /^(?:[\w\.]+[:]{0,2})?\s*include\s+\"?/i;
-const strictIncludeRegex = /^(?:[\w\.]+[:]{0,2})?\s*include\s+\"?$/i;
-const firstWordRegex = /^(?:[\w\.]+[:]{0,2})?\s*\w*$/;
-const sectionRegex = /^(?:[\w\.]+[:]{0,2})?\s*section\b/i;
+/**
+ * Provides the completions items for Intellisense,
+ * uses instruction.json to create snippets and the 
+ * error watcher uses the snippets as well
+ */
 class ASMCompletionProposer {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
@@ -18,7 +16,6 @@ class ASMCompletionProposer {
         this.instructionItemsNonForm = [];
         this.instructionItemsNonFormList = [];
         const extension = vscode.extensions.getExtension("alex-parker.ez80-asm");
-        // const instructionsJSONPath = "c:\\Users\\Alex\\Downloads\\ez80asm\\instructions.json"
         const instructionsJSONPath = path.join(extension.extensionPath, "instructions.json");
         const instructionsJSON = JSON.parse(fs.readFileSync(instructionsJSONPath, "utf8"));
         const instructions = instructionsJSON["instructions"];
@@ -117,11 +114,7 @@ class ASMCompletionProposer {
                     }
                     return runningList;
                 }
-
-
                 const item2 = new vscode.CompletionItem(element.name, vscode.CompletionItemKind.Snippet);
-
-
                 if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("UPPER")) {
                     element.name = element.name.toUpperCase();
                 } else if (vscode.workspace.getConfiguration().get("ez80-asm.caseSnippets").includes("lower")) {
@@ -198,19 +191,10 @@ class ASMCompletionProposer {
 
     provideCompletionItems(document, position, token, context) {
         let output = [];
-        // let prefix = document.getText(new vscode.Range(position.with({ character: 0 }), position));
-        // let triggerWordLineRange = document.getWordRangeAtPosition(position, /.+/);
-        // let triggerWordLine = document.getText(triggerWordLineRange);
-        // let triggerWordRange = document.getWordRangeAtPosition(position, /[\S]+/);
-        // let triggerWord = document.getText(triggerWordRange);
-        // if (triggerWord.length < 2) {
-        //     return output
-        // }
         if (vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
             this.instructionItems.forEach((item) => {
                 output.push(item);
             })
-
         }
         const symbols = this.symbolDocumenter.symbols(document);
         for (const name in symbols) {
@@ -227,15 +211,6 @@ class ASMCompletionProposer {
                 if (symbol.documentation) {
                     item.documentation = new vscode.MarkdownString(symbol.documentation);
                 }
-                // if (triggerWord.indexOf(".") == 0 && item.label.indexOf(".") == 0) {
-                //     item.insertText = item.label.substring(1);
-                // }
-                //   if (symbol.isLocal && symbol.scope && symbol.scope.end) {
-                //       let symbolRange = new vscode.Range(symbol.scope.start, symbol.scope.end);
-                //       if (symbolRange.contains(position) == false) {
-                //           continue;
-                //       }
-                //   }
                 output.push(item);
             }
         }

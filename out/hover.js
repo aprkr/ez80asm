@@ -7,6 +7,11 @@ const binaryRegex = /^%([01]+)$/;
 const binaryRegex2 = /^([01]+)b$/;
 const integerRegex = /^[0-9]+d?$/;
 
+/**
+ * Provides hover information, pretty straight forward
+ * if the text is a symbol, provide documentation,
+ * if it's a number, give it in other bases (hex, binary, and decimal)
+ */
 class ASMHoverProvider {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
@@ -41,7 +46,6 @@ class ASMHoverProvider {
                 let hoverText = new vscode.MarkdownString();
                 hoverText.appendCodeblock(numberValue + "\n$" + numberValue.toString(16) + "\n%" + numberValue.toString(2))
                 return new vscode.Hover(hoverText, range)
-                // return new vscode.Hover(`\`${numberValue}\`\n\n\`\$${numberValue.toString(16)}\`\n\n\`%${numberValue.toString(2)}\``, range);
             }
         }
         return null;

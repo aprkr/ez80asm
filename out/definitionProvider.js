@@ -1,5 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const vscode = require("vscode")
+/**
+ * Definition Provider, right click a symbol to use
+ */
 class ASMDefinitionProvider {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
@@ -10,7 +14,9 @@ class ASMDefinitionProvider {
             const text = document.getText(range);
             const symbol = this.symbolDocumenter.symbol(text, document);
             if (symbol) {
-                return symbol.location;
+                let symRange = new vscode.Range(symbol.lineNumber, 0, symbol.lineNumber, text.length)
+                let location = new vscode.Location(symbol.uri, symRange)
+                return location;
             }
         }
         return undefined;

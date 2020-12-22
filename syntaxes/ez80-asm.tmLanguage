@@ -108,6 +108,13 @@
 			<string>keyword.control.opcodes.ez80</string>
 		</dict>
 
+		<dict>
+			<key>match</key>
+			<string>(?i)\s(b_call)</string>
+			<key>name</key>
+			<string>keyword.control.bcall.ez80</string>
+		</dict>
+
 		<!--Opcode suffixes-->
 
 		<dict>
@@ -139,12 +146,15 @@
 			<string>constant.numeric.hex.ez80</string>
 		</dict>
 
-		<dict>
-			<key>match</key>
-			<string>\$.+?\s</string> <!--starts with "$", invalid till whitespace-->
-			<key>name</key>
-			<string>invalid</string>
-		</dict>
+		<!--
+			<dict>
+				<key>match</key>
+				<string>\$.+?\s</string>
+				<key>name</key>
+				<string>invalid</string>
+			</dict>	
+		-->
+		
 
 		<dict>
 			<key>match</key>

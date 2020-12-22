@@ -1,20 +1,25 @@
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
+const semantics = require("./semanticTokens")
 const path = require("path");
 const fs = require("fs");
 const commentLineRegex = /^;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
 const FILE_NAME = 2;
-// const spacerRegex = /^\s*(.)\1{3,}\s*$/;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
 const equateRegex = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|equs|set|EQU)[\W]+.*$/i;
 const completionProposer = require("./completion");
-const wordregex = /\b\S+(\.\w+)?(\s?[\+|\-|\*|\/]\s?\S+)?\b/g
-const wordregex2 = /(^(\S+)\s([^\r\n\t\f\v ,]+))\b(\)?\s?,\s?(.+))?/
-const commentregex = /.+?;/g
-const offsetregex = /(\s?[\+|\-|\*|\/]\s?\S+)(.+)?/
+const wordregex = /([\w\.]+(\.\w+)?(\.|\b))/g
+const numberRegex = /((\$|0x)[0-9a-fA-F]+\b)|(\b[0-9a-fA-F]+h\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)/g
+const firstoperandregex = /^\s*[\w\.]+\s+([^\,\r\n\f\v]+)/
+const secondoperandregex = /^.*?,\s*(.*)/
+const nonCommentRegex = /^([^;]+[^\,\r\n\t\f\v ;])/g
+const opcodeRegex = /\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL)\b/i;
+const noOperandOpcodeRegex = /\b(DAA|NEG|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EXX|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|CCF|DI|EI|HALT|NOP|RSMIX|SCF|SLP|STMIX|RETI|RETN|RLA|RLCA|RRA|RRCA|RRD)\b/i;
+const suffixRegex = /(\.)(LIL|LIS|SIL|SIS|L|S)\b/i;
+
 // class ScopeDescriptor {
 //     constructor(start, end) {
 //         this.start = start;
@@ -22,24 +27,27 @@ const offsetregex = /(\s?[\+|\-|\*|\/]\s?\S+)(.+)?/
 //     }
 // }
 class SymbolDescriptor {
-    constructor(location, kind, documentation) {
-        this.location = location;
+    constructor(lineNumber, kind, documentation, uri) {
+        this.lineNumber = lineNumber;
         // this.isExported = isExported;
         // this.isLocal = isLocal;
         this.kind = kind;
         // this.scope = scope;
         this.documentation = documentation;
+        this.uri = uri
     }
 }
 class FileTable {
-    constructor(fsPath) {
+    constructor(fsPath, lineCount) {
         this.includedFiles = [];
         this.includeFileLines = [];
         this.fsDir = path.dirname(fsPath);
         this.fsPath = fsPath;
         this.symbols = {};
-        this.referencedSymbols = [];
+        // this.referencedSymbols = [];
+        this.lineCount = lineCount;
         // this.scopes = [];
+        this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
     }
 }
 var SearchMode;
@@ -48,12 +56,16 @@ var SearchMode;
     SearchMode[SearchMode["includes"] = 1] = "includes";
     SearchMode[SearchMode["parents"] = 2] = "parents";
 })(SearchMode || (SearchMode = {}));
+/**
+ * This one does a lot, initially scans the document for symbols,
+ * has a method (symbols()) to find available symbols
+ * also contains the method for line diagnostics
+ */
 class ASMSymbolDocumenter {
     constructor() {
         this.files = {};
         this.ASMCompletionProposer = new completionProposer.ASMCompletionProposer
         this.instructionItemsFull = this.ASMCompletionProposer.instructionItemsFull
-        this.collections = {}
         vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
             files.forEach((fileURI) => {
                 vscode.workspace.openTextDocument(fileURI).then((document) => {
@@ -61,46 +73,27 @@ class ASMSymbolDocumenter {
                 });
             });
         });
-        vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 2).then((files) => {
-            files.forEach((fileURI) => {
-                vscode.workspace.openTextDocument(fileURI).then((document) => {
-                    this.document(document);
-                });
-            });
-        });
-        // var diagnosticTimeout = 0
-        var documenttimeout = 0;
-        vscode.workspace.onDidChangeTextDocument((event) => {
-            if (event.document.fileName.match(/(ez80|z80|inc|asm)$/)) {
-                // clearTimeout(diagnosticTimeout)
-                clearTimeout(documenttimeout)
-                documenttimeout = setTimeout(() => { this.document(event.document, event) }, 100);
-                // diagnosticTimeout = setTimeout(() => { this.getDiagnostics(event.document, event) }, 200);
-            }
-        });
-        vscode.window.onDidChangeVisibleTextEditors((event) => {
-            for (let i = 0; i < event.length; ++i) {
-                if (event[i].document.fileName.match(/(ez80|z80|inc|asm)$/)) {
-                    this.document(event[i].document);
-                    // setTimeout(() => { this.getDiagnostics(event[i].document) }, 100);
-                }
-            }
-        });
-        const watcher = vscode.workspace.createFileSystemWatcher("**/*.{ez80,z80,inc,asm}");
-        watcher.onDidCreate((uri) => {
-            vscode.workspace.openTextDocument(uri).then((document) => {
-                this.document(document);
-            });
-        });
-        watcher.onDidDelete((uri) => {
-            delete this.files[uri.fsPath];
-        });
-        if (vscode.window.activeTextEditor) {
-            let startingDoc = vscode.window.activeTextEditor.document
-            if (startingDoc.fileName.match(/ez80|z80|asm/)) {
-                // setTimeout(() => { this.getDiagnostics(startingDoc) }, 2000);
-            }
-        }
+        // vscode.workspace.findFiles("**/*.{ez80,z80,inc,asm}", null, 1).then((files) => {
+        //     files.forEach((fileURI) => {
+        //         vscode.workspace.openTextDocument(fileURI).then((document) => {
+        //             this.document(document);
+        //         });
+        //     });
+        // });
+        // var documenttimeout = 0; // taken care of in semanticTokens.js
+        // vscode.workspace.onDidChangeTextDocument((event) => {
+        //     if (event.document.fileName.match(/(ez80|z80|inc|asm)$/)) {
+        //         clearTimeout(documenttimeout)
+        //         documenttimeout = setTimeout(() => { this.document(event.document, event) }, 100);
+        //     }
+        // });
+        // vscode.window.onDidChangeVisibleTextEditors((event) => {
+        //     for (let i = 0; i < event.length; ++i) {
+        //         if (event[i].document.fileName.match(/(ez80|z80|inc|asm)$/)) {
+        //             this.document(event[i].document);
+        //         }
+        //     }
+        // });
     }
     _resolveFilename(filename, fsRelativeDir) {
         // Try just sticking the filename onto the directory.
@@ -249,31 +242,36 @@ class ASMSymbolDocumenter {
      * @param {*} event if used, will restrict the documenting to a certain range to speed things up
      */
     document(document, event) {
-        if (!this.collections[document.fileName]) {
-            this.collections[document.fileName] = vscode.languages.createDiagnosticCollection();
-        }
-        let table = new FileTable(document.uri.fsPath);
+        let table = new FileTable(document.uri.fsPath, 0);
         let startLine = 0;
         let endLine = document.lineCount;
-        if (event && event.document === document) {
-            startLine = Math.max(event.contentChanges[0].range.start.line - 1, 0)
+        if (event && event.document === document && event.contentChanges) {
+            table = this.files[document.uri.fsPath];
+            startLine = event.contentChanges[0].range.start.line
             endLine = Math.min(startLine + 2, document.lineCount - 1)
             while (commentLineRegex.exec(document.lineAt(endLine).text) && endLine < document.lineCount) {
                 endLine++
             }
             endLine++
-            table = this.files[document.uri.fsPath];
-        }
-        this.files[document.uri.fsPath] = table;
-        if (event) {
-            let inter = event.contentChanges[0].range
+            if (table.lineCount != document.lineCount) {
+                if (table.lineCount < document.lineCount) {
+                    for (var symName in table.symbols) {
+                        if (table.symbols[symName].lineNumber > startLine) {
+                            table.symbols[symName].lineNumber += document.lineCount - table.lineCount
+                        }
+                    }
+                }
+            }
             for (var symName in table.symbols) {
-                let symrange = table.symbols[symName].location.range
-                if (inter.intersection(symrange)) {
+                let symLine = table.symbols[symName].lineNumber
+                if (symLine >= startLine && symLine < endLine) {
                     delete table.symbols[symName];
                 }
             }
+        } else {
+            table.lineCount = document.lineCount
         }
+        this.files[document.uri.fsPath] = table;
         for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
             const line = document.lineAt(lineNumber);
             if (line.text === "") {
@@ -286,12 +284,18 @@ class ASMSymbolDocumenter {
             const includeLineMatch = includeLineRegex.exec(line.text);
             const labelMatch = labelDefinitionRegex.exec(line.text);
             if (includeLineMatch) {
-                const filename = includeLineMatch[FILE_NAME];
-                if (table.includedFiles.indexOf(filename) == -1) {
-                    table.includedFiles.push(filename);
-                }
+                const filename = includeLineMatch[FILE_NAME]; 
+                let includeLineIndex = table.includeFileLines.indexOf(lineNumber)   
+                if (includeLineIndex != -1) {
+                    table.includeFileLines.splice(includeLineIndex)
+                    table.includedFiles.splice(includeLineIndex, 1)
+                }   
                 const fsRelativeDir = path.dirname(document.uri.fsPath);
                 this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
+                if (table.includedFiles.indexOf(filename) == -1) {
+                    table.includedFiles.push(filename);
+                    table.includeFileLines.push(lineNumber)
+                }
             } else if (labelMatch) {
                 const declaration = labelMatch[1];
                 let kind = undefined;
@@ -301,192 +305,145 @@ class ASMSymbolDocumenter {
                     kind = vscode.SymbolKind.Variable
                 }
                 const name = declaration.replace(/:+/, "");
-                const endChar = line.range.start.character + name.length;
-                const endposition = new vscode.Position(lineNumber, endChar);
-                const declarationrange = new vscode.Range(line.range.start, endposition)
-                const location = new vscode.Location(document.uri, declarationrange);
                 let documentation = this.getDocumentation(document, lineNumber, kind);
-                table.symbols[name] = new SymbolDescriptor(location, kind == undefined ? vscode.SymbolKind.Function : kind, documentation);
-                table.symbols[name].lowercase = name.toLowerCase();
+                table.symbols[name] = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri);
             }
         }
-
     }
-    getDiagnostics(document, event) {
-        let collection = this.collections[document.fileName]
-        collection.clear()
+    getLineDiagnostics(text, lineNumber, symbols, document) {
         let diagnosticsArray = []
-        if (!vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
-            return
+        if (text === "") {
+            return;
         }
-        let startLine = 0;
-        let endLine = document.lineCount;
-        const symbols = this.symbols(document);
-        const invalidOperands = "Invalid Operands"
-        const unknownOpcode = "Unknown Opcode"
-        let errorCode = invalidOperands
-        for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
-            const line = document.lineAt(lineNumber);
-            const commentLineMatch = commentLineRegex.exec(line.text);
-            const includeLineMatch = includeLineRegex.exec(line.text);
-            const labelMatch = labelDefinitionRegex.exec(line.text);
-            if (commentLineMatch || labelMatch) {
-                continue
-            } else if (includeLineMatch) {
-                const filename = includeLineMatch[FILE_NAME];
-                const fsRelativeDir = path.dirname(document.uri.fsPath);
-                if (this._resolveFilename(filename, fsRelativeDir) === "") {
-                    const endChar = includeLineMatch[0].length;
-                    const range = new vscode.Range(lineNumber, 0, lineNumber, endChar)
-                    diagnosticsArray.push(new vscode.Diagnostic(range, "File not found"));
+        const includeLineMatch = includeLineRegex.exec(text);
+        let nonCommentMatch = text.match(nonCommentRegex)
+        const labelMatch = text.match(labelDefinitionRegex)
+        if (nonCommentMatch) {
+            nonCommentMatch = nonCommentMatch[0].replace(/\".+\"/g, "")
+            if (!labelMatch && vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
+                if (includeLineMatch) {
+                    const filename = includeLineMatch[2];
+                    const fsRelativeDir = path.dirname(document.uri.fsPath);
+                    if (this._resolveFilename(filename, fsRelativeDir) === "") {
+                        const endChar = includeLineMatch[0].length;
+                        const range = new vscode.Range(lineNumber, 0, lineNumber, endChar)
+                        diagnosticsArray.push(new vscode.Diagnostic(range, "File not found"));
+                    }
+                    return diagnosticsArray;
                 }
-            } else {
-                let nonCommentMatch = line.text.match(commentregex);
-                if (nonCommentMatch != null || (!line.text.includes(";") && line.text.length > 0)) {
-                    if (nonCommentMatch) {
-                        nonCommentMatch = nonCommentMatch[0].replace(";", "");
-                    } else {
-                        nonCommentMatch = line.text
+                let diagline = nonCommentMatch
+                diagline = diagline.replace(numberRegex, "number");
+                if (diagline.match(/b_call\((?=.+)/i)) {
+                    diagline = diagline.replace(/b_call\((?=.+)/i, "call ")
+                    if (diagline.endsWith(")")) {
+                        diagline = diagline.subString(0, diagline.length - 1)
                     }
-                    nonCommentMatch = nonCommentMatch.trim();
-                    if (nonCommentMatch.length == 0 || nonCommentMatch.startsWith(".") || nonCommentMatch.startsWith("#")) {
-                        continue
-                    }
-                    nonCommentMatch = nonCommentMatch.replace(/\'.\'/, "1");
-                    nonCommentMatch = nonCommentMatch.replace("\t", " ");
-                    const offsetmatch = offsetregex.exec(nonCommentMatch)
-                    nonCommentMatch = nonCommentMatch.replace("b_call", "call ")
-                    nonCommentMatch = nonCommentMatch.replace("B_CALL", "call ")
-                    const wordmatch = wordregex2.exec(nonCommentMatch);
-                    nonCommentMatch = nonCommentMatch.toLowerCase();
-                    nonCommentMatch = nonCommentMatch.replace(" ,", ",");
-                    if (nonCommentMatch.match(/\w,\w/)) {
-                        nonCommentMatch = nonCommentMatch.replace(",", ", ");
-                    }
-                    if (nonCommentMatch.includes(".")) {
-                        nonCommentMatch = nonCommentMatch.replace(".lil ", " ");
-                        nonCommentMatch = nonCommentMatch.replace(".sil ", " ");
-                        nonCommentMatch = nonCommentMatch.replace(".lis ", " ");
-                        nonCommentMatch = nonCommentMatch.replace(".lil ", " ");
-                        nonCommentMatch = nonCommentMatch.replace(".l ", " ");
-                        nonCommentMatch = nonCommentMatch.replace(".s ", " ");
-                        if (wordmatch) {
-                            wordmatch[2] = wordmatch[2].replace(".lil ", " ");
-                            wordmatch[2] = wordmatch[2].replace(".sil ", " ");
-                            wordmatch[2] = wordmatch[2].replace(".lis ", " ");
-                            wordmatch[2] = wordmatch[2].replace(".lil ", " ");
-                            wordmatch[2] = wordmatch[2].replace(".l ", " ");
-                            wordmatch[2] = wordmatch[2].replace(".s ", " ");
-                        }
-                    }
-                    if (wordmatch) {
-                        wordmatch[3] = wordmatch[3].replace("(", "");
-                        wordmatch[3] = wordmatch[3].replace(")", "");
-                        if (wordmatch[5]) {
-                            wordmatch[5] = wordmatch[5].replace("(", "");
-                            wordmatch[5] = wordmatch[5].replace(")", "");
-                        }
-                    }
-                    if (this.instructionItemsFull.indexOf(nonCommentMatch) != -1 && !nonCommentMatch.match(/\b(r8|R8|r24|R24|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|rxy|RXY|bit|BIT|cc|CC)\b/)) {
-                        continue;
-                    }
-
-                    let match = false
-                    for (let i = 2; i < 5; ++i) {
-                        if (!wordmatch) {
-                            if (!nonCommentMatch.match(/\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL|adc|add|cp|daa|dec|inc|mlt|neg|sbc|sub|bit|res|set|cpd|cpdr|cpi|cpir|ldd|lddr|ldi|ldir|ex|exx|in|in0|ind|indr|indrx|ind2|ind2r|indm|indmr|ini|inir|inirx|ini2|ini2r|inim|inimr|otdm|otdmr|otdrx|otim|otimr|otirx|out|out0|outd|otdr|outd2|otd2r|outi|otir|outi2|oti2r|tstio|ld|lea|pea|pop|push|and|cpl|or|tst|xor|ccf|di|ei|halt|im|nop|rsmix|scf|slp|stmix|call|djnz|jp|jr|ret|reti|retn|rst|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|sla|sra|srl)\b/)) {
-                                errorCode = unknownOpcode
-                            }
-                            break
-                        }
-                        if (wordmatch[i] == undefined) {
-                            break
-                        }
-                        if (i == 4) {
-                            i = 5;
-                        }
-                        if (i == 2 && offsetmatch) {
-                            if (nonCommentMatch.replace(offsetmatch[0].toLowerCase(), "").includes(" ")) {
-                                nonCommentMatch = nonCommentMatch.replace(offsetmatch[0].toLowerCase(), "");
-                                if (nonCommentMatch.indexOf("(") != -1) {
-                                    nonCommentMatch = nonCommentMatch + ")";
-                                }
-                                if (wordmatch[5]) {
-                                    wordmatch[3] = wordmatch[3].replace(offsetmatch[0].replace("(", "").replace(")", ""), "");
-                                    wordmatch[5] = wordmatch[5].replace(offsetmatch[0].replace("(", "").replace(")", ""), "");
-                                    wordmatch[3] = wordmatch[3].replace(offsetmatch[0].replace(")", ""), "");
-                                    wordmatch[5] = wordmatch[5].replace(offsetmatch[0].replace(")", ""), "");
-
-                                }
-
-                            }
-                            match = true
-                            break
-                        }
-                        let test = "";
-                        if (wordmatch[i].match(/(^[0-9]+$)|(^[0-9a-fA-F]+h$)|(^(\$|0x)[0-9a-fA-F]+$)|(^\%[01]+$)|(^[01]+b$)/)) {
-                            test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
-                            if (this.instructionItemsFull.indexOf(test) != -1) {
-                                match = true
-                                break
-                            }
-                            test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "mmn")
-                            if (this.instructionItemsFull.indexOf(test) != -1) {
-                                match = true
-                                break
-                            }
-                            test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "d")
-                            if (this.instructionItemsFull.indexOf(test) != -1) {
-                                match = true
-                                break
-                            }
-                        }
-                        for (var name in symbols) {
-                            if (symbols[name].lowercase === wordmatch[i].toLowerCase()) {
-                                test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "mmn")
-                                if (this.instructionItemsFull.indexOf(test) != -1) {
-                                    match = true
-                                    break
-                                }
-                                test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "n")
-                                if (this.instructionItemsFull.indexOf(test) != -1) {
-                                    match = true
-                                    break
-                                }
-                                test = nonCommentMatch.replace(wordmatch[i].toLowerCase(), "bit")
-                                if (this.instructionItemsFull.indexOf(test) != -1) {
-                                    match = true
-                                    break
-                                }
-                                let withoutpars = nonCommentMatch.replace("(", "").replace(")", "");
-                                test = withoutpars.replace(wordmatch[i].toLowerCase(), "mmn")
-                                if (this.instructionItemsFull.indexOf(test) != -1) {
-                                    match = true
-                                    break
-                                }
-                                test = withoutpars.replace(wordmatch[i].toLowerCase(), "n")
-                                if (this.instructionItemsFull.indexOf(test) != -1) {
-                                    match = true
-                                    break
-                                }
-                                test = withoutpars.replace(wordmatch[i].toLowerCase(), "bit")
-                                if (this.instructionItemsFull.indexOf(test) != -1) {
-                                    match = true
-                                    break
-                                }
-                            }
-                        }
-                    }
-                    if (!match) {
-                        // console.log(nonCommentMatch)
-                        const endChar = 1 + nonCommentMatch.length;
+                }
+                const diagwordmatch = diagline.match(wordregex);
+                let opcodeskip = false
+                let invalid = true
+                if (!diagline.match(/^\s*(\#|\.|db|dw|dl)/gi)) {      // check the opcode
+                    if (diagwordmatch[0].indexOf(".") != -1 && !diagwordmatch[0].match(suffixRegex)) {       // if the suffix isn't valid
+                        const endChar = 1 + diagline.length;
                         const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
-                        diagnosticsArray.push(new vscode.Diagnostic(range, errorCode));
+                        diagnosticsArray.push(new vscode.Diagnostic(range, "Bad suffix"));
+                    } else if (diagwordmatch[0].indexOf(".") != -1) {
+                        diagline = diagline.replace(/\.\w+/, "")
+                    }
+                    if (!diagwordmatch[0].match(opcodeRegex)) {        // if the opcode isn't valid
+                        const endChar = 1 + diagline.length;
+                        const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                        diagnosticsArray.push(new vscode.Diagnostic(range, "Bad opcode"));
+                        return diagnosticsArray;
+                    } else if (diagwordmatch[0].match(noOperandOpcodeRegex)) { // if the opcode doesn't use an operand
+                        if (diagwordmatch.length > 1) {
+                            const endChar = 1 + diagline.length;
+                            const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                            diagnosticsArray.push(new vscode.Diagnostic(range, "No operand needed for this opcode"));
+                            return diagnosticsArray;
+                        } else {
+                            opcodeskip = true
+                        }
+                    }
+                } else {
+                    opcodeskip = true
+                }
+                if (!opcodeskip) {
+                    for (let i = 1; i < diagwordmatch.length; i++) {    // replace all the symbols with "number"
+                        if (symbols[Object.keys(symbols).find(key => key.toLowerCase() === diagwordmatch[i].toLowerCase())]) {
+                            diagline = diagline.replace(diagwordmatch[i], "number")
+                        }
+                    }
+                    diagline = this.formatLine(diagline);
+                    let operands = this.getOperands(diagline);
+                    diagline = this.evalOperands(diagline, operands)
+                    invalid = this.testLine(diagline)
+                    if (invalid) {
+                        const endChar = 1 + diagline.length;
+                        const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                        diagnosticsArray.push(new vscode.Diagnostic(range, "Bad operands"));
                     }
                 }
             }
         }
-        collection.set(document.uri, diagnosticsArray);
+        return diagnosticsArray
+    }
+    formatLine(line) {
+        line = line.toLowerCase();
+        line = line.trim()
+        line = line.replace(/\s+/g, " ")
+        line = line.replace(/\'.+\'/, "number")
+        line = line.replace(/(ix|iy)\s*(\+|-|\/|\*)\s*/gi, "ix+")
+        line = line.replace(/\s*,\s*/g, ", ")
+        line = line.replace(/\[/g, "(")
+        line = line.replace(/\]/g, ")")
+        return line
+    }
+    getOperands(line) {
+        let operands = []
+        let operand = line.match(firstoperandregex)
+        if (operand) {
+            operands.push(operand[1])
+        }
+        operand = line.match(secondoperandregex)
+        if (operand) {
+            operands.push(operand[1])
+        }
+        return operands
+    }
+    testLine(line) {
+        line = line.replace(/(ix|iy)\+valid/gi, "ix+d")
+        if (this.instructionItemsFull.indexOf(line) != -1) {
+            return false
+        }
+        let test = line.replace(/\bvalid\b/g, "mmn")
+        if (this.instructionItemsFull.indexOf(test) != -1) {
+            return false
+        }
+        test = line.replace(/\bvalid\b/g, "n")
+        if (this.instructionItemsFull.indexOf(test) != -1) {
+            return false
+        }
+        test = line.replace(/\bvalid\b/g, "bit")
+        if (this.instructionItemsFull.indexOf(test) != -1) {
+            return false
+        }
+        return true
+    }
+    evalOperands(line, operands) {
+        for (let i = 0; i < operands.length; i++) {
+            try {
+                eval(operands[i].replace(/(number|((ix|iy)(?=\+)))/gi, 1))
+                let withoutParen = operands[i].match(/(?<=^\()(.*)(?=\)$)/)
+                if (!withoutParen) {
+                    withoutParen = [operands[i]]
+                }
+                withoutParen[0] = withoutParen[0].replace(/(ix|iy)\+/i, "")
+                line = line.replace(withoutParen[0], "valid")
+            } catch (err) {
+            }
+        }
+        return line
     }
     getDocumentation(document, lineNumber, kind) {
         if (lineNumber == 0) {
@@ -514,12 +471,11 @@ class ASMSymbolDocumenter {
         }
         if (kind == vscode.SymbolKind.Variable) {
             commentBuffer.unshift(withoutComment)
-        }
-        if (commentBuffer.length > 0) {
-            documentation = commentBuffer.join("\n");
+            documentation = commentBuffer.join("\n")
+        } else if (commentBuffer.length > 0) {
+            documentation = commentBuffer.join("\n\r");
         }
         return documentation;
-
     }
 }
 exports.ASMSymbolDocumenter = ASMSymbolDocumenter;
