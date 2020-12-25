@@ -18,7 +18,7 @@
 		"onLanguage:ez80-asm",
 		"workspaceContains:**/*.{ez80,z80}"
 	],
-	"main": "./out/extension.js",
+	"main": "./out/extension2.js",
 	"categories": [
 		"Programming Languages"
 	],

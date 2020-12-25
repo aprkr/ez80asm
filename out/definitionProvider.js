@@ -1,26 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const vscode = require("vscode")
 /**
  * Definition Provider, right click a symbol to use
  */
-class ASMDefinitionProvider {
+class definitionProvider {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
     }
     provideDefinition(document, position, token) {
-        const range = document.getWordRangeAtPosition(position, /(\$[0-9a-fA-F]+)|(%[0-1]+)|([0-9]+)|(\.?[A-Za-z_][A-Za-z_0-9]*(\\@|:*))/g);
+        const range = document.getWordRangeAtPosition(position, /([\w\.]+)/g);
         if (range) {
             const text = document.getText(range);
-            const symbol = this.symbolDocumenter.symbol(text, document);
+            const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
             if (symbol) {
-                let symRange = new vscode.Range(symbol.lineNumber, 0, symbol.lineNumber, text.length)
-                let location = new vscode.Location(symbol.uri, symRange)
-                return location;
+                return symbol.location;
             }
         }
         return undefined;
     }
 }
-exports.ASMDefinitionProvider = ASMDefinitionProvider;
+exports.definitionProvider = definitionProvider;
 //# sourceMappingURL=definitionProvider.js.map

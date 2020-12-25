@@ -1,7 +1,7 @@
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
-const semantics = require("./semanticTokens")
+const semantics = require("./semantics")
 const path = require("path");
 const fs = require("fs");
 const commentLineRegex = /^;\s*(.*)$/;

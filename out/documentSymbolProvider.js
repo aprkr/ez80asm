@@ -9,21 +9,17 @@ class ASMDocumentSymbolProvider {
         this.symbolDocumenter = symbolDocumenter;
     }
     provideDocumentSymbols(document, token) {
-        const table = this.symbolDocumenter.files[document.fileName];
-        if (table == null) {
-            return [];
+        const table = this.symbolDocumenter.documents[document.uri];
+        if (!table) {
+            return
         }
         const output = [];
-        for (const name in table.symbols) {
-            if (table.symbols.hasOwnProperty(name)) {
-                const symbol = table.symbols[name];
-                let symRange = new vscode.Range(symbol.lineNumber, 0, symbol.lineNumber, name.length)
-                let location = new vscode.Location(symbol.uri, symRange)
-                output.push(new vscode.SymbolInformation(name, symbol.kind, undefined, location));
-            }
+        for (const name in table.symbolDeclarations) {
+            const symbol = table.symbolDeclarations[name];
+            output.push(new vscode.SymbolInformation(symbol.name, symbol.kind, undefined, symbol.location));     
         }
         return output;
     }
 }
-exports.ASMDocumentSymbolProvider = ASMDocumentSymbolProvider;
+    exports.ASMDocumentSymbolProvider = ASMDocumentSymbolProvider;
 //# sourceMappingURL=documentSymbolProvider.js.map

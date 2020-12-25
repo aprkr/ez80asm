@@ -12,20 +12,20 @@ const integerRegex = /^[0-9]+d?$/;
  * if the text is a symbol, provide documentation,
  * if it's a number, give it in other bases (hex, binary, and decimal)
  */
-class ASMHoverProvider {
+class hoverProvider {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
     }
     provideHover(document, position, token) {
-        const range = document.getWordRangeAtPosition(position, /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|([01]+b\b)|([0-9]+d?\b)|([.#]?[A-Za-z_]\w*(\\@|:*))|([A-Fa-f0-9]+h\b)/g);
+        const range = document.getWordRangeAtPosition(position, /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|([01]+b\b)|([0-9]+d?\b)|([\w\.]+)|([A-Fa-f0-9]+h\b)/g);
         if (range) {
             const text = document.getText(range);
-            const symbol = this.symbolDocumenter.symbol(text, document);
+            const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
             let numberValue = undefined;
             if (symbol !== undefined && symbol.documentation !== undefined) {
                 let hoverText = new vscode.MarkdownString()
                 if (symbol.kind == vscode.SymbolKind.Variable) {
-                    hoverText.appendCodeblock(symbol.documentation.replace("\t", " "), "ez80-asm")
+                    hoverText.appendCodeblock(symbol.documentation.replace(/\t/g, " "), "ez80-asm")
                 } else {
                     hoverText.appendMarkdown(symbol.documentation)
                 }
@@ -51,4 +51,4 @@ class ASMHoverProvider {
         return null;
     }
 }
-exports.ASMHoverProvider = ASMHoverProvider;
+exports.hoverProvider = hoverProvider;

@@ -5,15 +5,6 @@
 	<key>patterns</key>
 	<array>
 
-		<!--Stuff that needs to be replaced
-		<dict>
-			<key>match</key>			
-			<string>\b(r8|R8|r24|R24|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|rxy|RXY|bit|BIT|cc|CC)\b</string>
-			<key>name</key>
-			<string>invalid</string>
-		</dict>
-		-->
-
 		<dict>
 			<key>match</key>			
 			<string>(?i)IX\/Y(\+D\))?|\+D\)</string>
@@ -30,34 +21,41 @@
 			<string>comment.line.ez80</string>
 		</dict>
 
+		<!--Directives-->
+		<dict>
+			<key>match</key>
+			<string>#\w+</string> <!--"#" is char to match "*" mean 0+ times-->
+			<key>name</key>
+			<string>keyword.control.directive.ez80</string>
+		</dict>
+
+		<dict>
+			<key>match</key>
+			<string>(?i)(\b|\.)(org|ds|db|dw|dl|assume|list|nolist|end)\b</string>
+			<key>name</key>
+			<string>keyword.control.directive.ez80</string>
+		</dict>
+
+		<dict>
+			<key>match</key>
+			<string>(?i)(\b|\.)(DEFM|DEFB|DEFS|DEFW|EQU|ENT|DISP)\b</string>
+			<key>name</key>
+			<string>keyword.control.directive.ez80</string>
+		</dict>
+
 		<!--Labels-->
 		<dict>
 			<key>match</key>
-			<string>^\S*:\s*</string> <!--If it ends in ": " it's a label-->
+			<string>^[\w\.]+:{1,2}(?=\s*;|\s*$)</string> <!--If it ends in ": " it's a label-->
 			<key>name</key>
 			<string> entity.name.function.label.ez80</string>
 		</dict>
 
-		<!--Directives-->
 		<dict>
 			<key>match</key>
-			<string>#\w*</string> <!--""^" is anchor from beginning of line, #" is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
+			<string>^[\w\.]+(?=\s*;|\s*$)</string>
 			<key>name</key>
-			<string>keyword.control.directive.ez80</string>
-		</dict>
-
-		<dict>
-			<key>match</key>
-			<string>\B\.\w*</string> <!--"\B" is to make standing by self, "." is char to match, "\S" means non-whitespace, "*" mean 0+ times-->
-			<key>name</key>
-			<string>keyword.control.directive.period.ez80</string>
-		</dict>
-
-		<dict>
-			<key>match</key>
-			<string>(?i)\b(DEFM|DEFB|DEFS|DEFW|ORG|EQU|ENT|DISP)\b</string>
-			<key>name</key>
-			<string>keyword.control.directive.ez80</string>
+			<string> entity.name.label.ez80</string>
 		</dict>
 
 		<!--Conditionals (NZ, Z etc.)-->
@@ -70,26 +68,8 @@
 		
 		<!-- Strings -->
 		<dict>
-			<key>begin</key>
-			<string>"</string>
-			<key>beginCaptures</key>
-			<dict>
-				<key>0</key>
-				<dict>
-					<key>name</key>
-					<string>punctuation.definition.string.begin.ez80</string>
-				</dict>
-			</dict>
-			<key>end</key>
-			<string>"</string>
-			<key>endCaptures</key>
-			<dict>
-				<key>0</key>
-				<dict>
-					<key>name</key>
-					<string>punctuation.definition.string.end.ez80</string>
-				</dict>
-			</dict>
+			<key>match</key>
+			<string>\".+\"</string>
 			<key>name</key>
 			<string>string.quoted.double.ez80</string>
 		</dict>
@@ -146,16 +126,6 @@
 			<string>constant.numeric.hex.ez80</string>
 		</dict>
 
-		<!--
-			<dict>
-				<key>match</key>
-				<string>\$.+?\s</string>
-				<key>name</key>
-				<string>invalid</string>
-			</dict>	
-		-->
-		
-
 		<dict>
 			<key>match</key>
 			<string>\%[01]+\b</string> <!--starts with "%", only has 0 or 1 after-->
@@ -182,7 +152,7 @@
 			<key>match</key>			
 			<string>(?i)(\w+(?=\s+?(?:EQU)\s+))</string>
 			<key>name</key>
-			<string>variable.ez80</string>
+			<string>variable.equate.ez80</string>
 		</dict>
 
 		<!--Catch-all for any other word, remove this if you don't use semantic tokens-->
