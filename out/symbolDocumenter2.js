@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
-const commentLineRegex = /^;\s*(.*)$/;
+const commentLineRegex = /^\s*;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
 const FILE_NAME = 2;
@@ -48,6 +48,7 @@ class DocumentTable {
               this.path = uri.fsPath
               this.symbolDeclarations = {}
               this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
+              this.diagnosticCollection.array = []
               this.lineCount = 0;
               this.possibleRefs = []
        }

@@ -12,8 +12,6 @@ class semanticsProvider {
               if (!table) {
                      return
               }
-              let collection = table.diagnosticCollection
-              collection.clear()
               const legend = this.legend
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
               const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
@@ -30,8 +28,7 @@ class semanticsProvider {
                             }
                      }
               }
-              tokensBuilder.build()
-              return tokensBuilder
+              return tokensBuilder.build("tokens")
        }
 }
 exports.semanticsProvider = semanticsProvider

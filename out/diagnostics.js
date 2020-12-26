@@ -14,11 +14,30 @@ const noOperandOpcodeRegex = /\b(DAA|NEG|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EXX
 const suffixRegex = /(\.)(LIL|LIS|SIL|SIS|L|S)\b/i;
 
 class diagnosticProvider {
-       constructor(symbolDocumenter) {
+       constructor(symbolDocumenter, completionProposer) {
               this.symbolDocumenter = symbolDocumenter
+              this.instructionItemsFull = completionProposer.instructionItemsNonForm
        }
        getDiagnostics(document, event) { // fill this
-
+              const table = this.symbolDocumenter.documents[document.uri]
+              let collection = table.diagnosticCollection
+              collection.clear()
+              // let diagnosticsArray = collection.array
+              let diagnosticsArray = []
+              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
+              let startLine = 0
+              let endLine = document.lineCount
+              for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
+                     const line = document.lineAt(lineNumber)
+                     let diags = this.getLineDiagnostics(line.text, lineNumber, symbols, document)
+                     if (diags && diags.length > 0) {
+                            for (let i = 0; i < diags.length; i++) {
+                                   diagnosticsArray.push(diags[i])
+                            }
+                     }
+              }
+              collection.set(document.uri, diagnosticsArray)
+              collection.array = diagnosticsArray
        }
        getLineDiagnostics(text, lineNumber, symbols, document) {
               let diagnosticsArray = []

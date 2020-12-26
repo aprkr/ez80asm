@@ -196,22 +196,25 @@ class ASMCompletionProposer {
                 output.push(item);
             })
         }
-        const symbols = this.symbolDocumenter.symbols(document);
-        for (const name in symbols) {
-            if (symbols.hasOwnProperty(name)) {
-                const symbol = symbols[name];
-                let kind = vscode.CompletionItemKind.Function;
-                if (symbol.kind == vscode.SymbolKind.Method) {
-                    kind = vscode.CompletionItemKind.Method;
+        const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
+        const line = document.lineAt(position.line)
+        if (!line.text.match(/^\s*\w+\s*$/)) {
+            for (const name in symbols) {
+                if (symbols.hasOwnProperty(name)) {
+                    const symbol = symbols[name];
+                    let kind = vscode.CompletionItemKind.Function;
+                    if (symbol.kind == vscode.SymbolKind.Method) {
+                        kind = vscode.CompletionItemKind.Method;
+                    }
+                    if (symbol.kind == vscode.SymbolKind.Variable) {
+                        kind = vscode.CompletionItemKind.Variable;
+                    }
+                    const item = new vscode.CompletionItem(name, kind);
+                    if (symbol.documentation) {
+                        item.documentation = new vscode.MarkdownString(symbol.documentation);
+                    }
+                    output.push(item);
                 }
-                if (symbol.kind == vscode.SymbolKind.Variable) {
-                    kind = vscode.CompletionItemKind.Variable;
-                }
-                const item = new vscode.CompletionItem(name, kind);
-                if (symbol.documentation) {
-                    item.documentation = new vscode.MarkdownString(symbol.documentation);
-                }
-                output.push(item);
             }
         }
         return output;
