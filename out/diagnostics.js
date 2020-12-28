@@ -18,15 +18,84 @@ class diagnosticProvider {
               this.symbolDocumenter = symbolDocumenter
               this.instructionItemsFull = completionProposer.instructionItemsNonForm
        }
-       getDiagnostics(document, event) { // fill this
+       scanRefs(document) {
               const table = this.symbolDocumenter.documents[document.uri]
               let collection = table.diagnosticCollection
               collection.clear()
-              // let diagnosticsArray = collection.array
-              let diagnosticsArray = []
+              let array = []
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
+              for (let i = 0; i < table.possibleRefs.length; i++) {
+                     if (!symbols[Object.keys(symbols).find(key => key.toLowerCase() === table.possibleRefs[i].text.toLowerCase())]) {
+                            array.push(new vscode.Diagnostic(table.possibleRefs[i].range, "Bad symbol"));
+                     }
+              }
+              collection.symarray = array
+              collection.set(document.uri, table.fullArray)
+       }
+       getDiagnostics(document, event) {
+              if (event && event.contentChanges.length == 0) {
+                     return
+              }
+              this.scanRefs(document)
+              const table = this.symbolDocumenter.documents[document.uri]
+              let collection = table.diagnosticCollection
+              let diagnosticsArray = collection.array
               let startLine = 0
               let endLine = document.lineCount
+              if (event) {
+                     startLine = event.contentChanges[0].range.start.line
+                     endLine = event.contentChanges[0].range.end.line + 1
+                     let deleteEndLine = endLine
+                     let newLinematch = event.contentChanges[0].text.match(/\n/g)
+                     if (newLinematch) {
+                            endLine += newLinematch.length
+                     } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
+                            endLine = startLine + 1
+                     }
+                     for (let i = 0; i < diagnosticsArray.length; i++) {
+                            let range = diagnosticsArray[i].range
+                            let diagLine = range.start.line
+                            if (diagLine >= startLine && diagLine < endLine) {
+                                   diagnosticsArray.splice(i, 1)
+                                   i--
+                                   continue
+                            }
+                            if (table.lineCount != document.lineCount && diagLine > startLine) {
+                                   diagLine += document.lineCount - table.lineCount
+                                   diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
+                            }
+                     }
+                     table.lineCount = document.lineCount
+              }
+              // if (event) { // need to delete old ones and update lineNumbers
+              //        startLine = Math.max(event.contentChanges[0].range.start.line - 1, 0)
+              //        endLine = Math.min(event.contentChanges[0].range.end.line + 2, document.lineCount)
+              //        let newLinematch = event.contentChanges[0].text.match(/\n/g)
+              //        if (newLinematch) {
+              //               endLine += newLinematch.length
+              //        }
+              //        diagnosticsArray = collection.array
+              //        for (let i = 0; i < diagnosticsArray.length; i++) {
+              //               let range = diagnosticsArray[i].range
+              //               let diagLine = range.start.line
+              //               if (diagLine >= startLine && diagLine < endLine) {
+              //                      diagnosticsArray.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //               if (table.lineCount != document.lineCount && diagLine > startLine) {
+              //                      diagLine += document.lineCount - table.lineCount
+              //                      diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
+              //               }
+              //        }
+              //        table.lineCount = document.lineCount
+              //        if (startLine < 0) {
+              //               startLine = 0
+              //        }
+              // } else {
+              //        collection.clear()
+              // }
+              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber)
                      let diags = this.getLineDiagnostics(line.text, lineNumber, symbols, document)
@@ -36,8 +105,8 @@ class diagnosticProvider {
                             }
                      }
               }
-              collection.set(document.uri, diagnosticsArray)
               collection.array = diagnosticsArray
+              collection.set(document.uri, table.fullArray)
        }
        getLineDiagnostics(text, lineNumber, symbols, document) {
               let diagnosticsArray = []

@@ -49,8 +49,13 @@ class DocumentTable {
               this.symbolDeclarations = {}
               this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
               this.diagnosticCollection.array = []
+              this.diagnosticCollection.symarray = []
               this.lineCount = 0;
               this.possibleRefs = []
+              this.refs = []
+       }
+       get fullArray() {
+              return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray)
        }
 }
 class symbolDocumenter {
@@ -58,41 +63,109 @@ class symbolDocumenter {
               this.documents = {}
        }
        declareSymbols(document, event) {
+              if (event && event.contentChanges.length == 0) {
+                     return
+              }
               let table = new DocumentTable(document.uri)
               let startLine = 0;
               let endLine = document.lineCount;
-              if (event && event.document === document && event.contentChanges) {
+              if (event) {
                      table = this.documents[document.uri];
                      startLine = event.contentChanges[0].range.start.line
-                     endLine = Math.min(startLine + 1, document.lineCount - 1)
+                     endLine = event.contentChanges[0].range.end.line + 1
+                     let deleteEndLine = endLine
+                     let newLinematch = event.contentChanges[0].text.match(/\n/g)
+                     if (newLinematch) {
+                            endLine += newLinematch.length
+                     } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
+                            endLine = startLine + 1
+                     }
                      while (commentLineRegex.exec(document.lineAt(endLine).text) && endLine < document.lineCount) {
                             endLine++
                      }
-                     endLine++
                      const lineDiff = table.lineCount != document.lineCount
                      for (var symName in table.symbolDeclarations) {
+                            const symLine = table.symbolDeclarations[symName].line
+                            if (symLine >= startLine && symLine < deleteEndLine) {
+                                   delete table.symbolDeclarations[symName];
+                                   continue
+                            }
                             if (lineDiff && table.symbolDeclarations[symName].line >= startLine) {
                                    table.symbolDeclarations[symName].line += document.lineCount - table.lineCount
-                            }
-                            const symLine = table.symbolDeclarations[symName].line
-                            if (symLine >= startLine && symLine < endLine) {
-                                   delete table.symbolDeclarations[symName];
-                            }
+                            }            
                      }
                      for (let i = 0; i < table.possibleRefs.length; i++) {
+                            if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < deleteEndLine) {
+                                   table.possibleRefs.splice(i, 1)
+                                   i--
+                                   continue
+                            } 
                             if (lineDiff && table.possibleRefs[i].line >= startLine) {
                                    table.possibleRefs[i].line += document.lineCount - table.lineCount
                             }
-                            if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < endLine) {
+                            if (table.possibleRefs[i].line > document.lineCount - 1 || table.possibleRefs[i].line < 0) {
                                    table.possibleRefs.splice(i, 1)
-                            }
+                                   i--
+                                   continue
+                            }             
                      }
+              } else {
+                     table.lineCount = document.lineCount
               }
-              table.lineCount = document.lineCount
+              // if (event && event.document === document && event.contentChanges) { // Remove lines - range is multiple lines, text is ''
+              // // Add lines - range is one line, text has \n
+              //        table = this.documents[document.uri];
+              //        startLine = Math.max(event.contentChanges[0].range.start.line - 1, 0)
+              //        endLine = Math.min(event.contentChanges[0].range.end.line + 1, document.lineCount)
+              //        let newLinematch = event.contentChanges[0].text.match(/\n/g)
+              //        if (newLinematch) {
+              //               endLine += newLinematch.length
+              //        }
+              //        if (endLine >= document.lineCount) {
+              //               endLine = document.lineCount - 1
+              //        }
+              //        while (commentLineRegex.exec(document.lineAt(endLine).text) && endLine < document.lineCount) {
+              //               endLine++
+              //        }
+              //        const lineDiff = table.lineCount != document.lineCount
+              //        for (var symName in table.symbolDeclarations) {
+              //               const symLine = table.symbolDeclarations[symName].line
+              //               if (symLine >= startLine && symLine < endLine) {
+              //                      delete table.symbolDeclarations[symName];
+              //                      continue
+              //               }
+              //               if (lineDiff && table.symbolDeclarations[symName].line >= startLine) {
+              //                      table.symbolDeclarations[symName].line += document.lineCount - table.lineCount
+              //               }            
+              //        }
+              //        for (let i = 0; i < table.possibleRefs.length; i++) {
+              //               if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < endLine) {
+              //                      table.possibleRefs.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               } 
+              //               if (table.possibleRefs[i].line >= document.lineCount - 1 || table.possibleRefs[i].line < 0) {
+              //                      table.possibleRefs.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //               if (lineDiff && table.possibleRefs[i].line >= startLine) {
+              //                      table.possibleRefs[i].line += document.lineCount - table.lineCount
+              //               }             
+              //        }
+              //        if (endLine < document.lineCount - 1) {
+              //               endLine++
+              //        }
+              //        if (startLine < 0) {
+              //               startLine = 0
+              //        }
+              // } else {
+              //        table.lineCount = document.lineCount
+              // }
               this.documents[document.uri] = table;
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber);
-                     if (line.text.match(/^\s*$/)) {
+                     if (line.text.match(/(^\s*$)|(^:.*)/)) {
                             continue;
                      }
                      const commentLineMatch = commentLineRegex.exec(line.text);
@@ -104,7 +177,7 @@ class symbolDocumenter {
                      let nonCommentMatch = line.text.match(nonCommentRegex)
                      nonCommentMatch = nonCommentMatch[0].replace(/(\".+\")|(\'.+\')/g, "")
                      const wordmatch = nonCommentMatch.match(wordregex);
-                     if ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text))) {
+                     if (!line.text.match(/(^section)|(^\s*\#)|(^\s*if)|(^.+macro)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
                             let char = 0
                             for (let index = 1; index < wordmatch.length; ++index) {
                                    if (!wordmatch[index].match(nonRegRegex)) {
