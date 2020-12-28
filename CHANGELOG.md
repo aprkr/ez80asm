@@ -1,5 +1,8 @@
 ## 1.3.1
-* Improved diagnostics
+* Major refactoring
+* Diagnostics are much more faster and accurate
+* Semantic highlighting is also faster
+* Some changes to syntax highlighting
 
 ## 1.3.0
 * The big update

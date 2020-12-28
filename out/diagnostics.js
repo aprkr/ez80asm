@@ -30,7 +30,9 @@ class diagnosticProvider {
                      }
               }
               collection.symarray = array
-              collection.set(document.uri, table.fullArray)
+              if (vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
+                     collection.set(document.uri, table.fullArray)
+              }   
        }
        getDiagnostics(document, event) {
               if (event && event.contentChanges.length == 0) {
@@ -45,7 +47,6 @@ class diagnosticProvider {
               if (event) {
                      startLine = event.contentChanges[0].range.start.line
                      endLine = event.contentChanges[0].range.end.line + 1
-                     let deleteEndLine = endLine
                      let newLinematch = event.contentChanges[0].text.match(/\n/g)
                      if (newLinematch) {
                             endLine += newLinematch.length
@@ -67,38 +68,10 @@ class diagnosticProvider {
                      }
                      table.lineCount = document.lineCount
               }
-              // if (event) { // need to delete old ones and update lineNumbers
-              //        startLine = Math.max(event.contentChanges[0].range.start.line - 1, 0)
-              //        endLine = Math.min(event.contentChanges[0].range.end.line + 2, document.lineCount)
-              //        let newLinematch = event.contentChanges[0].text.match(/\n/g)
-              //        if (newLinematch) {
-              //               endLine += newLinematch.length
-              //        }
-              //        diagnosticsArray = collection.array
-              //        for (let i = 0; i < diagnosticsArray.length; i++) {
-              //               let range = diagnosticsArray[i].range
-              //               let diagLine = range.start.line
-              //               if (diagLine >= startLine && diagLine < endLine) {
-              //                      diagnosticsArray.splice(i, 1)
-              //                      i--
-              //                      continue
-              //               }
-              //               if (table.lineCount != document.lineCount && diagLine > startLine) {
-              //                      diagLine += document.lineCount - table.lineCount
-              //                      diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
-              //               }
-              //        }
-              //        table.lineCount = document.lineCount
-              //        if (startLine < 0) {
-              //               startLine = 0
-              //        }
-              // } else {
-              //        collection.clear()
-              // }
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber)
-                     let diags = this.getLineDiagnostics(line.text, lineNumber, symbols, document)
+                     let diags = this.getLineDiagnostics(line.text, lineNumber, symbols, document, collection.symarray)
                      if (diags && diags.length > 0) {
                             for (let i = 0; i < diags.length; i++) {
                                    diagnosticsArray.push(diags[i])
@@ -106,9 +79,11 @@ class diagnosticProvider {
                      }
               }
               collection.array = diagnosticsArray
-              collection.set(document.uri, table.fullArray)
+              if (vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
+                     collection.set(document.uri, table.fullArray)
+              } 
        }
-       getLineDiagnostics(text, lineNumber, symbols, document) {
+       getLineDiagnostics(text, lineNumber, symbols, document, symarray) {
               let diagnosticsArray = []
               if (text === "") {
                      return;
@@ -118,7 +93,7 @@ class diagnosticProvider {
               const labelMatch = text.match(labelDefinitionRegex)
               if (nonCommentMatch) {
                      nonCommentMatch = nonCommentMatch[0].replace(/\".+\"/g, "")
-                     if (!labelMatch && vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
+                     if (!labelMatch) {
                             if (includeLineMatch) {
                                    const filename = includeLineMatch[2];
                                    const fsRelativeDir = path.dirname(document.uri.fsPath);
@@ -179,6 +154,11 @@ class diagnosticProvider {
                                    if (invalid) {
                                           const endChar = 1 + diagline.length;
                                           const range = new vscode.Range(lineNumber, 1, lineNumber, endChar)
+                                          for (let i = 0; i < symarray.length; i++) {
+                                                 if (symarray[i].range.intersection(range)) {
+                                                        return diagnosticsArray
+                                                 }
+                                          }
                                           diagnosticsArray.push(new vscode.Diagnostic(range, "Bad operands"));
                                    }
                             }
