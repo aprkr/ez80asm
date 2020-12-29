@@ -53,7 +53,7 @@
 
 		<dict>
 			<key>match</key>
-			<string>^[\w\.]+(?=\s*;|\s*$)</string>
+			<string>^[A-Za-z\.]+[\w\.]*(?=\s*;|\s*$)</string>
 			<key>name</key>
 			<string> entity.name.label.ez80</string>
 		</dict>
@@ -107,7 +107,7 @@
 		<!--Numbers-->
 		<dict>
 			<key>match</key>
-			<string>\b[0-9]+d?\b</string> <!--"+" means 1 or more-->
+			<string>(\b|^)[0-9]+d?\b</string> <!--"+" means 1 or more-->
 			<key>name</key>
 			<string>constant.numeric.dec.ez80</string>
 		</dict>

@@ -25,7 +25,7 @@ class hoverProvider {
             if (symbol !== undefined && symbol.documentation !== undefined) {
                 let hoverText = new vscode.MarkdownString()
                 if (symbol.kind == vscode.SymbolKind.Variable) {
-                    hoverText.appendCodeblock(symbol.documentation.replace(/\t/g, " "), "ez80-asm")
+                    hoverText.appendCodeblock(symbol.documentation.replace(/(\t| )+/g, " "), "ez80-asm")
                 } else {
                     hoverText.appendMarkdown(symbol.documentation)
                 }

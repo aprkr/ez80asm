@@ -100,6 +100,11 @@
 						"description": "Highlight errors while you type",
 						"type": "boolean",
 						"default": true
+					},
+					"ez80-asm.caseInsensitive": {
+						"description": "Leaved checked if you would like symbols to be case-insensitive (most assemblers are case-insensitive)",
+						"type": "boolean",
+						"default": true
 					}
 
 				}

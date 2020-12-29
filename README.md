@@ -11,6 +11,7 @@ The (E)Z80 Assembly extension for Visual Studio provides language support for EZ
 * Hover over a label or equate to see it's documentation
 * Peek and find definitions of equates and labels
 * Automatically searches all included files in the current workspace for documentation
+* Option to toggle case-sensitivity
 
 ### Intellisense Suggestions
 * Start typing and get suggestions based on included symbols and documented ez80 snippets
@@ -30,7 +31,13 @@ The (E)Z80 Assembly extension for Visual Studio provides language support for EZ
 ### Diagnostic Provider
 * Note that these diagnostics are specific to the ez80 CPU
 * Error checking while you type
-* Can disabled in settings
+* Can be disabled in settings
+* Can check for duplicate declarations in a document (but not included files)
+* Won't check .inc files for problems (it can slow down the extension a bit)
+
+### Symbol Renaming
+* Rename a label or equate across all included files
+* If the declaration is in a .inc file, you have to rename in that file to prevent accidental renaming
 
 ### License
 This project is subject to [these terms](https://github.com/LiberalEater/ez80asm/blob/main/LICENSE.txt).

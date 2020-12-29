@@ -30,11 +30,12 @@ class SymbolDescriptor {
        }
 }
 class possibleRef {
-       constructor(line, startChar, endChar, text) {
+       constructor(line, startChar, endChar, text, uri) {
               this.line = line
               this.startChar = startChar
               this.endChar = endChar
               this.text = text
+              this.uri = uri
        }
        get range() {
               return new vscode.Range(this.line, this.startChar, this.line, this.endChar)
@@ -50,12 +51,14 @@ class DocumentTable {
               this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
               this.diagnosticCollection.array = []
               this.diagnosticCollection.symarray = []
+              this.diagnosticCollection.redefArray = []
               this.lineCount = 0;
               this.possibleRefs = []
               this.refs = []
+              this.reDefinitions = []
        }
        get fullArray() {
-              return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray)
+              return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
        }
 }
 class symbolDocumenter {
@@ -66,21 +69,29 @@ class symbolDocumenter {
               if (event && event.contentChanges.length == 0) {
                      return
               }
+              if (event && event.contentChanges.length > 1) {
+                     for (let i = 1; i < event.contentChanges.length; i++) {
+                            const pseudoEvent = {}
+                            pseudoEvent.contentChanges = []
+                            pseudoEvent.contentChanges.push(event.contentChanges[i])
+                            this.declareSymbols(document, pseudoEvent)
+                     }
+              }
               let table = new DocumentTable(document.uri)
               let startLine = 0;
               let endLine = document.lineCount;
-              if (event) {
+              if (event && event.contentChanges.length > 0) {
                      table = this.documents[document.uri];
                      startLine = event.contentChanges[0].range.start.line
                      endLine = event.contentChanges[0].range.end.line + 1
-                     let deleteEndLine = endLine
-                     let newLinematch = event.contentChanges[0].text.match(/\n/g)
+                     const deleteEndLine = endLine
+                     const newLinematch = event.contentChanges[0].text.match(/\n/g)
                      if (newLinematch) {
                             endLine += newLinematch.length
                      } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
                             endLine = startLine + 1
                      }
-                     while (commentLineRegex.exec(document.lineAt(endLine).text) && endLine < document.lineCount) {
+                     while (endLine < document.lineCount && commentLineRegex.exec(document.lineAt(endLine).text)) {
                             endLine++
                      }
                      const lineDiff = table.lineCount != document.lineCount
@@ -92,14 +103,29 @@ class symbolDocumenter {
                             }
                             if (lineDiff && table.symbolDeclarations[symName].line >= startLine) {
                                    table.symbolDeclarations[symName].line += document.lineCount - table.lineCount
-                            }            
+                            }
+                     }
+                     for (let i = 0; i < table.reDefinitions.length; i++) {
+                            if (table.reDefinitions[i].line >= startLine && table.reDefinitions[i].line < deleteEndLine) {
+                                   table.reDefinitions.splice(i, 1)
+                                   i--
+                                   continue
+                            }
+                            if (lineDiff && table.reDefinitions[i].line >= startLine) {
+                                   table.reDefinitions[i].line += document.lineCount - table.lineCount
+                            }
+                            if (table.reDefinitions[i].line > document.lineCount - 1 || table.reDefinitions[i].line < 0) {
+                                   table.reDefinitions.splice(i, 1)
+                                   i--
+                                   continue
+                            }
                      }
                      for (let i = 0; i < table.possibleRefs.length; i++) {
                             if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < deleteEndLine) {
                                    table.possibleRefs.splice(i, 1)
                                    i--
                                    continue
-                            } 
+                            }
                             if (lineDiff && table.possibleRefs[i].line >= startLine) {
                                    table.possibleRefs[i].line += document.lineCount - table.lineCount
                             }
@@ -107,7 +133,25 @@ class symbolDocumenter {
                                    table.possibleRefs.splice(i, 1)
                                    i--
                                    continue
-                            }             
+                            }
+                     }
+                     for (let i = 0; i < table.includeFileLines.length; i++) {
+                            let line = table.includeFileLines[i]
+                            if (line >= startLine && line < deleteEndLine) {
+                                   table.includeFileLines.splice(i, 1)
+                                   table.includes.splice(i, 1)
+                                   i--
+                                   continue
+                            }
+                            if (lineDiff && line >= startLine) {
+                                   table.includeFileLines[i] += document.lineCount - table.lineCount
+                            }
+                            if (line > document.lineCount - 1 || line < 0) {
+                                   table.includeFileLines.splice(i, 1)
+                                   table.includes.splice(i, 1)
+                                   i--
+                                   continue
+                            }
                      }
               } else {
                      table.lineCount = document.lineCount
@@ -136,7 +180,7 @@ class symbolDocumenter {
                                           }
                                           const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
                                           const endChar = startChar + wordmatch[index].length
-                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index])
+                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri)
                                           table.possibleRefs.push(ref)
                                    }
                                    char += wordmatch[index].length;
@@ -161,6 +205,9 @@ class symbolDocumenter {
                             }
                      } else if (labelMatch) {
                             const declaration = labelMatch[0];
+                            if (declaration.match(/^\s*\.?(list|nolist|end)/)) { // these are directives, so they can't be labels
+                                   continue
+                            }
                             let kind = undefined;
                             if (declaration.indexOf(":") != -1) {
                                    kind = vscode.SymbolKind.Method;
@@ -169,7 +216,12 @@ class symbolDocumenter {
                             }
                             const name = declaration.replace(/:/g, "");
                             let documentation = this.getDocumentation(document, lineNumber, kind);
-                            table.symbolDeclarations[name] = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri, name);
+                            const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri, name);
+                            if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
+                                   table.reDefinitions.push(symbol)
+                                   continue
+                            }
+                            table.symbolDeclarations[name] = symbol
                      }
               }
        }
@@ -274,9 +326,18 @@ class symbolDocumenter {
               }
               return output
        }
-       checkSymbol(name, uri) {
-              return this.getAvailableSymbols(uri)[name]
+       checkSymbol(name, uri, symbols) {
+              if (!symbols) {
+                     symbols = this.getAvailableSymbols(uri)
+              }
+              if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
+                     return symbols[Object.keys(symbols).find(key => key.toLowerCase() === name.toLowerCase())]
+              } else {
+                     return symbols[name]
+              }
        }
 
 }
 exports.symbolDocumenter = symbolDocumenter
+exports.SymbolDescriptor = SymbolDescriptor
+exports.possibleRef = possibleRef

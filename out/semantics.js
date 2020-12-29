@@ -2,13 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 
-class SymbolRef {
-       constructor(name, location, lineNumber) {
-              this.name = name;
-              this.location = location;
-              this.lineNumber = lineNumber;
-       }
-}
 class semanticsProvider {
        constructor(symbolDocumenter, legend) {
               this.symbolDocumenter = symbolDocumenter;
@@ -24,12 +17,9 @@ class semanticsProvider {
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
               const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
               for (let i = 0; i < table.possibleRefs.length; i++) {
-                     if (symbols[table.possibleRefs[i].text]) {
+                     const symbol = this.symbolDocumenter.checkSymbol(table.possibleRefs[i].text, document.uri, symbols)
+                     if (symbol) {
                             const range = table.possibleRefs[i].range
-                            const symbol = symbols[table.possibleRefs[i].text]
-                            const location = new vscode.Location(document.uri, range)
-                            const ref = new SymbolRef(symbol.name, location, range.start.line)
-                            table.refs.push(ref)
                             if (symbol.kind == vscode.SymbolKind.Method) {
                                    tokensBuilder.push(range, 'function');
                             } else if (symbol.kind == vscode.SymbolKind.Variable) {

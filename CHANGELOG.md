@@ -1,3 +1,7 @@
+## 1.3.2
+* Case sensitivity option
+* Symbol renaming
+
 ## 1.3.1
 * Major refactoring
 * Diagnostics are much more faster and accurate
