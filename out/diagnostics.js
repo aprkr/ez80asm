@@ -13,6 +13,9 @@ const opcodeRegex = /\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|C
 const noOperandOpcodeRegex = /\b(DAA|NEG|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EXX|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|CCF|DI|EI|HALT|NOP|RSMIX|SCF|SLP|STMIX|RETI|RETN|RLA|RLCA|RRA|RRCA|RRD)\b/i;
 const suffixRegex = /(\.)(LIL|LIS|SIL|SIS|L|S)\b/i;
 
+/**
+ * This does a lot, scans table.possibleRefs, checks if opcodes/operands are correct, checks for duplicate declarations
+ */
 class diagnosticProvider {
        constructor(symbolDocumenter, completionProposer) {
               this.symbolDocumenter = symbolDocumenter

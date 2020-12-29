@@ -40,6 +40,9 @@ class possibleRef {
        get range() {
               return new vscode.Range(this.line, this.startChar, this.line, this.endChar)
        }
+       get location() {
+              return new vscode.Location(this.uri, this.range)
+       }
 }
 class DocumentTable {
        constructor(uri) {
@@ -93,6 +96,11 @@ class symbolDocumenter {
                      }
                      while (endLine < document.lineCount && commentLineRegex.exec(document.lineAt(endLine).text)) {
                             endLine++
+                     }
+                     if (endLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(endLine).text)) {
+                            let text = document.lineAt(endLine).text.replace(/:/g, "")
+                            let symbol = this.checkSymbol(text, document.uri, table.symbolDeclarations)
+                            symbol.documentation = this.getDocumentation(document, endLine, symbol.kind)
                      }
                      const lineDiff = table.lineCount != document.lineCount
                      for (var symName in table.symbolDeclarations) {

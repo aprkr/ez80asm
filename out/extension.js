@@ -10,6 +10,7 @@ const semantics = require("./semantics")
 const documentSymbolProvider = require("./documentSymbolProvider")
 const completion = require("./completion")
 const rename = require("./rename")
+const references = require("./references")
 
 
 
@@ -27,6 +28,7 @@ function activate(context) {
        context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider('ez80-asm', new documentSymbolProvider.ASMDocumentSymbolProvider(symbolDocumenter)));
        context.subscriptions.push(vscode.languages.registerCompletionItemProvider('ez80-asm', completionProposer))
        context.subscriptions.push(vscode.languages.registerRenameProvider('ez80-asm', new rename.renameProvider(symbolDocumenter)))
+       context.subscriptions.push(vscode.languages.registerReferenceProvider('ez80-asm', new references.referenceProvider(symbolDocumenter)))
        setTimeout(() => {context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider('ez80-asm', new semantics.semanticsProvider(symbolDocumenter, legend), legend))}, 1200)
 }
 exports.activate = activate;

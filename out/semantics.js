@@ -2,6 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 
+/**
+ * Searches table.possibleRefs to find semantic tokens
+ */
 class semanticsProvider {
        constructor(symbolDocumenter, legend) {
               this.symbolDocumenter = symbolDocumenter;
