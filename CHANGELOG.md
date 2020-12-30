@@ -1,3 +1,6 @@
+## 1.4.1
+* Minor fix when getting symbol names
+
 ## 1.4.0
 * Case sensitivity option
 * Symbol renaming

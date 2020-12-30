@@ -111,7 +111,7 @@ class symbolDocumenter {
                      }
                      if (endLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(endLine).text)) {
                             let text = document.lineAt(endLine).text.replace(/:/g, "")
-                            text = (text.match(/\w+/))[0]
+                            text = (text.match(/[\.\w+]+/))[0]
                             let symbol = this.checkSymbol(text, document.uri, table.symbolDeclarations)
                             symbol.documentation = this.getDocumentation(document, endLine, symbol.kind)
                      }
