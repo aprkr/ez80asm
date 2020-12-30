@@ -1,6 +1,8 @@
-## 1.3.2
+## 1.4.0
 * Case sensitivity option
 * Symbol renaming
+* Checking for duplicate declarations
+* Caching .inc files for a faster startup
 
 ## 1.3.1
 * Major refactoring

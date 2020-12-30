@@ -9,7 +9,7 @@ The (E)Z80 Assembly extension for Visual Studio provides language support for EZ
 ### Label and equate documentation
 * Add markdown documentation in comments
 * Hover over a label or equate to see it's documentation
-* Peek and find definitions of equates and labels
+* Peek and find definitions and references of equates and labels
 * Automatically searches all included files in the current workspace for documentation
 * Option to toggle case-sensitivity
 
