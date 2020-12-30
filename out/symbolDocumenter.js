@@ -22,12 +22,6 @@ class SymbolDescriptor {
               this.uri = uri
               this.name = name
        }
-       get range() {
-              return new vscode.Range(this.line, 0, this.line, this.name.length)
-       }
-       get location() {
-              return new vscode.Location(this.uri, this.range)
-       }
 }
 class possibleRef {
        constructor(line, startChar, endChar, text, uri) {
@@ -46,19 +40,28 @@ class possibleRef {
 }
 class DocumentTable {
        constructor(uri) {
-              this.includes = []
-              this.includeFileLines = []
-              this.directory = path.dirname(uri.fsPath)
-              this.path = uri.fsPath
-              this.symbolDeclarations = {}
-              this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
-              this.diagnosticCollection.array = []
-              this.diagnosticCollection.symarray = []
-              this.diagnosticCollection.redefArray = []
-              this.lineCount = 0;
-              this.possibleRefs = []
-              this.refs = []
-              this.reDefinitions = []
+              if (uri.fsPath.match(/^.+\.inc/)) {
+                     this.includes = []
+                     this.includeFileLines = []
+                     this.path = uri.fsPath
+                     this.symbolDeclarations = {}
+                     this.lineCount = 0;
+                     this.possibleRefs = []
+                     this.reDefinitions = []
+              } else {
+                     this.includes = []
+                     this.includeFileLines = []
+                     // this.directory = path.dirname(uri.fsPath)
+                     this.path = uri.fsPath
+                     this.symbolDeclarations = {}
+                     this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
+                     this.diagnosticCollection.array = []
+                     this.diagnosticCollection.symarray = []
+                     this.diagnosticCollection.redefArray = []
+                     this.lineCount = 0;
+                     this.possibleRefs = []
+                     this.reDefinitions = []
+              }
        }
        get fullArray() {
               return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
@@ -67,8 +70,17 @@ class DocumentTable {
 class symbolDocumenter {
        constructor() {
               this.documents = {}
+              this.extensionPath = (vscode.extensions.getExtension("alex-parker.ez80-asm")).extensionPath;
+              this.cacheFolder = path.join(this.extensionPath, "/caches")
        }
        declareSymbols(document, event) {
+              if (!event) {
+                     const table = this.readTableFromFile(document)
+                     if (table && table.path == document.uri.fsPath) {
+                            this.documents[document.uri] = table
+                            return
+                     }
+              }
               if (event && event.contentChanges.length == 0) {
                      return
               }
@@ -99,6 +111,7 @@ class symbolDocumenter {
                      }
                      if (endLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(endLine).text)) {
                             let text = document.lineAt(endLine).text.replace(/:/g, "")
+                            text = (text.match(/\w+/))[0]
                             let symbol = this.checkSymbol(text, document.uri, table.symbolDeclarations)
                             symbol.documentation = this.getDocumentation(document, endLine, symbol.kind)
                      }
@@ -232,6 +245,10 @@ class symbolDocumenter {
                             table.symbolDeclarations[name] = symbol
                      }
               }
+              if (document.fileName.match(/.+\.inc/i)) {
+                     table.possibleRefs = []
+                     this.writeTableToFile(document)
+              }
        }
        getDocumentation(document, lineNumber, kind) {
               if (lineNumber == 0) {
@@ -307,6 +324,26 @@ class symbolDocumenter {
               }
               // Nothing found, return the empty string.
               return "";
+       }
+       writeTableToFile(document) {
+              const docTable = this.documents[document.uri]
+              const json = JSON.stringify(docTable)
+              const base = path.basename(document.fileName)
+              const cachePath = path.join(this.cacheFolder, base + ".json");
+              fs.writeFile(cachePath, json, (error) => {
+                     if (error) {
+                            console.log("Error while writing to " + cachePath)
+                     }
+              })
+       }
+       readTableFromFile(document) {
+              const base = path.basename(document.fileName)
+              const cachePath = path.join(this.cacheFolder, base + ".json");
+              if (!fs.existsSync(cachePath)) {
+                     return null
+              }
+              const table = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+              return table
        }
        getAvailableSymbols(uri, searched, output) {
               if (!output || !searched) {

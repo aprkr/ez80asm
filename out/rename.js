@@ -11,7 +11,11 @@ class renameProvider {
               this.symbolDocumenter = symbolDocumenter
        }
        provideRenameEdits(document, position, newName, token) {
-              const range = document.getWordRangeAtPosition(position, /([A-Za-z\.][\w\.]*)/g);
+              if (newName.match(/;/g)) {
+                     vscode.window.showWarningMessage("Invalid name")
+                     return new vscode.WorkspaceEdit()
+              }
+              const range = document.getWordRangeAtPosition(position, /([_A-Za-z\.][\w\.]*)/g);
               const existingSymbol = this.symbolDocumenter.checkSymbol(newName, document.uri)
               if (existingSymbol) {
                      if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
@@ -28,15 +32,17 @@ class renameProvider {
                      const text = document.getText(range);
                      const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
                      if (symbol) {
-                            if (symbol.uri.fsPath.match(/^.+\.inc/) && symbol.uri !== document.uri) { // So you can't accidentally rename a symbol from a .inc file
+                            if (symbol.uri.fsPath.match(/^.+\.inc/) && symbol.uri.fsPath !== document.uri.fsPath) { // So you can't accidentally rename a symbol from a .inc file
                                    vscode.window.showWarningMessage("This symbol can only be changed in " + symbol.uri.fsPath)
                                    return new vscode.WorkspaceEdit()
                             }
-                            const table = this.symbolDocumenter.documents[symbol.uri]
+                            const uri = vscode.Uri.parse(symbol.uri.path)
+                            const table = this.symbolDocumenter.documents[uri]
                             delete table.symbolDeclarations[text]
                             table.symbolDeclarations[newName] = new symbolDocumenter.SymbolDescriptor(symbol.line, symbol.kind, symbol.documentation, symbol.uri, newName);
                             let edits = new vscode.WorkspaceEdit()
-                            edits.replace(symbol.uri, symbol.range, newName)
+                            const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
+                            edits.replace(symbol.uri, range, newName)
                             this.addEdits(document.uri, [], edits, newName, text) // this will grab all the edits
                             return edits
                      }

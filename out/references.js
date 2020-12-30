@@ -17,7 +17,8 @@ class referenceProvider {
                      const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
                      if (symbol) {
                             if (context.includeDeclaration) {
-                                   output.push(symbol.location)
+                                   const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
+                                   output.push(new vscode.Location(symbol.uri, range))
                             }
                             output = output.concat(this.findRefs(document.uri, [], [], symbol.name))
                             return output

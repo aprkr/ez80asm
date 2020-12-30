@@ -46,7 +46,7 @@ class diagnosticProvider {
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
               collection.redefArray = []
               for (let i = 0; i < table.reDefinitions.length; i++) {
-                     const definition = this.symbolDocumenter.checkSymbol(table.reDefinitions[i].name, table.reDefinitions[i].uri)
+                     const definition = this.symbolDocumenter.checkSymbol(table.reDefinitions[i].name, table.reDefinitions[i].uri, symbols)
                      if (!definition) {
                             table.symbolDeclarations[table.reDefinitions[i].name] = table.reDefinitions[i]
                             table.reDefinitions.splice(i, 1)
@@ -182,6 +182,21 @@ class diagnosticProvider {
                                    }
                                    diagline = this.formatLine(diagline);
                                    let operands = this.getOperands(diagline);
+                                   diagline = diagline.replace(/(.+)/g, function (match) {
+                                          const opcode = match.match(/^\s+(\w+)/)
+                                          for (let i = 0; i < operands.length; i++) {
+                                                 operands[i] = operands[i].replace(/ /g, "")
+                                          }
+                                          if (operands.length == 1) {
+                                                 return opcode[1] + " " + operands[0]
+                                          } else if (operands.length == 2) {
+                                                 return opcode[1] + " " + operands[0] + ", " + operands[1]
+                                          } else if (operands.length == 0) {
+                                                 return opcode[1]
+                                          } else {
+                                                 return match
+                                          }
+                                   })
                                    diagline = this.evalOperands(diagline, operands)
                                    invalid = this.testLine(diagline)
                                    if (invalid) {
@@ -201,11 +216,8 @@ class diagnosticProvider {
        }
        formatLine(line) {
               line = line.toLowerCase();
-              line = line.trim()
-              line = line.replace(/\s+/g, " ")
               line = line.replace(/\'.+\'/, "number")
               line = line.replace(/(ix|iy)\s*(\+|-|\/|\*)\s*/gi, "ix+")
-              line = line.replace(/\s*,\s*/g, ", ")
               line = line.replace(/\[/g, "(")
               line = line.replace(/\]/g, ")")
               return line
