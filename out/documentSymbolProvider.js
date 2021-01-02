@@ -9,7 +9,7 @@ class ASMDocumentSymbolProvider {
         this.symbolDocumenter = symbolDocumenter;
     }
     provideDocumentSymbols(document, token) {
-        const table = this.symbolDocumenter.documents[document.uri];
+        const table = this.symbolDocumenter.documents[document.uri.fsPath];
         if (!table) {
             return
         }

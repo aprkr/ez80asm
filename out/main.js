@@ -1,8 +1,13 @@
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
+const imports = require("./imports")
 
 class main {
+       /**
+        * @param {imports.symbolDocumenter} symbolDocumenter 
+        * @param {imports.diagnosticProvider} diagnosticProvider 
+        */
        constructor(symbolDocumenter, diagnosticProvider) {
               this.symbolDocumenter = symbolDocumenter
               this.diagnosticProvider = diagnosticProvider
@@ -20,7 +25,7 @@ class main {
               vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
                      files.forEach((fileURI) => {
                             vscode.workspace.openTextDocument(fileURI).then((document) => {
-                                   if (!this.symbolDocumenter.documents[document.uri]) {
+                                   if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
                                           scanDoc(document);
                                    }  
                             });
@@ -29,14 +34,14 @@ class main {
               vscode.workspace.findFiles("**/*.{ez80,z80,asm}", null, 2).then((files) => {
                      files.forEach((fileURI) => {
                             vscode.workspace.openTextDocument(fileURI).then((document) => {
-                                   if (!this.symbolDocumenter.documents[document.uri]) {
+                                   if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
                                           scanDoc(document);
                                    }  
                             });
                      });
               });
               const docOpened = (document) => { // if a file was just opened
-                     if (!this.symbolDocumenter.documents[document.uri] && document.fileName.match(/(ez80|z80|inc|asm)$/i)) {
+                     if (!this.symbolDocumenter.documents[document.uri.fsPath] && document.fileName.match(/(ez80|z80|inc|asm)$/i)) {
                             scanDoc(document)
                             setTimeout(() => { diagnoseOtherDocs(document) }, 2100)
                      }
@@ -44,7 +49,7 @@ class main {
               const diagnoseOtherDocs = (document) => { // check references in other files
                      for (let i = 0; i < vscode.workspace.textDocuments.length; i++) {
                             const doc = vscode.workspace.textDocuments[i]
-                            if (doc != document && !doc.isClosed && this.symbolDocumenter.documents[doc.uri] && !doc.fileName.match(/(inc)$/i)) {
+                            if (doc != document && !doc.isClosed && this.symbolDocumenter.documents[doc.uri.fsPath] && !doc.fileName.match(/(inc)$/i)) {
                                    this.diagnosticProvider.scanRefs(doc)
                             }
                      }
@@ -58,7 +63,7 @@ class main {
                      scanDoc(event.document, event)
                      otherDocTimeout = setTimeout(() => { diagnoseOtherDocs(event.document) }, 300)
               })
-              if (vscode.window.activeTextEditor && !this.symbolDocumenter.documents[vscode.window.activeTextEditor.document.uri]) { // if there is an currently open file
+              if (vscode.window.activeTextEditor && !this.symbolDocumenter.documents[vscode.window.activeTextEditor.document.uri.fsPath]) { // if there is an currently open file
                      scanDoc(vscode.window.activeTextEditor.document)
                      setTimeout(() => { diagnoseOtherDocs(vscode.window.activeTextEditor.document) }, 2100)
               }

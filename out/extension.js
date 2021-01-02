@@ -12,12 +12,13 @@ const completion = require("./completion")
 const rename = require("./rename")
 const references = require("./references")
 
-
-
 const tokenTypes = ['function','variable', 'class', 'label'];
 const tokenModifiers = ['declaration'];
 const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
 
+/**
+ * @param {vscode.ExtensionContext} context 
+ */
 function activate(context) {
        const symbolDocumenter = new documenter.symbolDocumenter();
        const completionProposer = new completion.ASMCompletionProposer(symbolDocumenter)

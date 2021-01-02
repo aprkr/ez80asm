@@ -179,7 +179,13 @@ class ASMCompletionProposer {
             this.instructionItemsNonForm = [...new Set(this.instructionItemsNonForm)]
         });
     }
-
+    /**
+     * 
+     * @param {vscode.TextDocument} document 
+     * @param {vscode.Position} position 
+     * @param {vscode.CancellationToken} token 
+     * @param {vscode.CompletionContext} context 
+     */
     provideCompletionItems(document, position, token, context) {
         let output = [];
         if (vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {

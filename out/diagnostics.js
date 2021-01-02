@@ -1,6 +1,7 @@
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
+const imports = require("./imports")
 const path = require("path");
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
 const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
@@ -17,12 +18,22 @@ const suffixRegex = /(\.)(LIL|LIS|SIL|SIS|L|S)\b/i;
  * This does a lot, scans table.possibleRefs, checks if opcodes/operands are correct, checks for duplicate declarations
  */
 class diagnosticProvider {
+       /**
+        * @param {imports.symbolDocumenter} symbolDocumenter 
+        * @param {imports.ASMCompletionProposer} completionProposer 
+        */
        constructor(symbolDocumenter, completionProposer) {
               this.symbolDocumenter = symbolDocumenter
               this.instructionItemsFull = completionProposer.instructionItemsNonForm
        }
-       scanRefs(document) {
-              const table = this.symbolDocumenter.documents[document.uri]
+       /**
+        * @param {vscode.TextDocument} document 
+        * @param {imports.DocumentTable} table 
+        */
+       scanRefs(document, table) {
+              if (!table) {
+                     table = this.symbolDocumenter.documents[document.uri.fsPath]
+              }
               let collection = table.diagnosticCollection
               collection.clear()
               let array = []
@@ -37,11 +48,15 @@ class diagnosticProvider {
                      collection.set(document.uri, table.fullArray)
               }
        }
+       /**
+        * @param {vscode.TextDocument} document 
+        * @param {vscode.TextDocumentChangeEvent} event 
+        */
        getDiagnostics(document, event) {
               if (document.fileName.match(/^.+\.inc$/)) {
                      return
               }
-              const table = this.symbolDocumenter.documents[document.uri]
+              const table = this.symbolDocumenter.documents[document.uri.fsPath]
               let collection = table.diagnosticCollection
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
               collection.redefArray = []
@@ -56,7 +71,8 @@ class diagnosticProvider {
                             table.symbolDeclarations[table.reDefinitions[i].name] = table.reDefinitions[i]
                             table.reDefinitions[i] = definition
                      } else {
-                            let range = document.getWordRangeAtPosition(table.reDefinitions[i].range.start, /[\w\.]+/g)
+                            const position = new vscode.Position(table.reDefinitions[i].line, 0)
+                            let range = document.getWordRangeAtPosition(position, /[\w\.]+/g)
                             let text = document.getText(range)
                             if (text !== table.reDefinitions[i].name) {
                                    table.reDefinitions.splice(i, 1)
@@ -64,43 +80,23 @@ class diagnosticProvider {
                                    continue
                             }
                      }
-                     let diag = new vscode.Diagnostic(table.reDefinitions[i].range, "Redefinition of " + table.reDefinitions[i].name.toUpperCase(), vscode.DiagnosticSeverity.Warning)
+                     const range = new vscode.Range(table.reDefinitions[i].line, 0, table.reDefinitions[i].line, table.reDefinitions[i].name.length)
+                     let diag = new vscode.Diagnostic(range, "Redefinition of " + table.reDefinitions[i].name.toUpperCase(), vscode.DiagnosticSeverity.Warning)
                      collection.redefArray.push(diag)
               }
-              this.scanRefs(document)
+              this.scanRefs(document, table)
               let diagnosticsArray = collection.array
               let startLine = 0
               let endLine = document.lineCount
               if (event) {
                      startLine = event.contentChanges[0].range.start.line
                      endLine = event.contentChanges[0].range.end.line + 1
-                     const deleteEndLine = endLine
                      const newLinematch = event.contentChanges[0].text.match(/\n/g)
                      if (newLinematch) {
                             endLine += newLinematch.length
                      } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
                             endLine = startLine + 1
-                     }
-                     for (let i = 0; i < diagnosticsArray.length; i++) {
-                            let range = diagnosticsArray[i].range
-                            let diagLine = range.start.line
-                            if (diagLine >= startLine && diagLine < deleteEndLine) {
-                                   diagnosticsArray.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (table.lineCount != document.lineCount && diagLine > startLine) {
-                                   diagLine += document.lineCount - table.lineCount
-                                   if (diagLine < 0) {
-                                          diagnosticsArray.splice(i, 1)
-                                          i--
-                                          continue
-                                   } else {
-                                          diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
-                                   }
-                            }
-                     }
-                     table.lineCount = document.lineCount
+                     }  
               }
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber)
@@ -116,6 +112,14 @@ class diagnosticProvider {
                      collection.set(document.uri, table.fullArray)
               }
        }
+       /**
+        * 
+        * @param {String} text 
+        * @param {Number} lineNumber 
+        * @param {{}} symbols 
+        * @param {vscode.TextDocument} document 
+        * @param {[]} symarray 
+        */
        getLineDiagnostics(text, lineNumber, symbols, document, symarray) {
               let diagnosticsArray = []
               if (text === "") {

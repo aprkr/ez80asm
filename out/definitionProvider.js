@@ -8,6 +8,12 @@ class definitionProvider {
     constructor(symbolDocumenter) {
         this.symbolDocumenter = symbolDocumenter;
     }
+    /**
+     * 
+     * @param {vscode.TextDocument} document 
+     * @param {vscode.Position} position 
+     * @param {vscode.CancellationToken} token 
+     */
     provideDefinition(document, position, token) {
         const range = document.getWordRangeAtPosition(position, /([\w\.]+)/g);
         if (range) {
@@ -15,7 +21,8 @@ class definitionProvider {
             const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
             if (symbol) {
                 const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
-                return new vscode.Location(symbol.uri, range)
+                const uri = vscode.Uri.file(symbol.fsPath)
+                return new vscode.Location(uri, range)
             }
         }
         return undefined;

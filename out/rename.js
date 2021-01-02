@@ -10,6 +10,13 @@ class renameProvider {
        constructor(symbolDocumenter) {
               this.symbolDocumenter = symbolDocumenter
        }
+       /**
+        * 
+        * @param {vscode.TextDocument} document 
+        * @param {vscode.Position} position 
+        * @param {String} newName 
+        * @param {vscode.CancellationToken} token 
+        */
        provideRenameEdits(document, position, newName, token) {
               if (newName.match(/;/g)) {
                      vscode.window.showWarningMessage("Invalid name")
@@ -32,17 +39,17 @@ class renameProvider {
                      const text = document.getText(range);
                      const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
                      if (symbol) {
-                            if (symbol.uri.fsPath.match(/^.+\.inc/) && symbol.uri.fsPath !== document.uri.fsPath) { // So you can't accidentally rename a symbol from a .inc file
-                                   vscode.window.showWarningMessage("This symbol can only be changed in " + symbol.uri.fsPath)
+                            if (symbol.fsPath.match(/^.+\.inc/) && symbol.fsPath !== document.uri.fsPath) { // So you can't accidentally rename a symbol from a .inc file
+                                   vscode.window.showWarningMessage("This symbol can only be changed in " + symbol.fsPath)
                                    return new vscode.WorkspaceEdit()
                             }
-                            const uri = vscode.Uri.parse(symbol.uri.path)
-                            const table = this.symbolDocumenter.documents[uri]
+                            const uri = vscode.Uri.file(symbol.fsPath)
+                            const table = this.symbolDocumenter.documents[uri.fsPath]
                             delete table.symbolDeclarations[text]
-                            table.symbolDeclarations[newName] = new symbolDocumenter.SymbolDescriptor(symbol.line, symbol.kind, symbol.documentation, symbol.uri, newName);
+                            table.symbolDeclarations[newName] = new symbolDocumenter.SymbolDescriptor(symbol.line, symbol.kind, symbol.documentation, symbol.fsPath, newName);
                             let edits = new vscode.WorkspaceEdit()
                             const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
-                            edits.replace(symbol.uri, range, newName)
+                            edits.replace(uri, range, newName)
                             this.addEdits(document.uri, [], edits, newName, text) // this will grab all the edits
                             return edits
                      }
@@ -50,8 +57,16 @@ class renameProvider {
               vscode.window.showWarningMessage("Symbol declaration not found")
               return new vscode.WorkspaceEdit()
        }
+       /**
+        * 
+        * @param {vscode.Uri} uri 
+        * @param {[]} searched 
+        * @param {vscode.WorkspaceEdit} edits 
+        * @param {String} newName 
+        * @param {String} oldName 
+        */
        addEdits(uri, searched, edits, newName, oldName) {
-              let table = this.symbolDocumenter.documents[uri]
+              let table = this.symbolDocumenter.documents[uri.fsPath]
               searched.push(uri.fsPath)
               let length = table.possibleRefs.length
               for (let i = 0; i < length; i++) {
@@ -76,12 +91,12 @@ class renameProvider {
                             this.addEdits(table.includes[i], searched, edits, newName, oldName)
                      }
               }
-              for (var fileuri in this.symbolDocumenter.documents) { // search files that include this one
-                     table = this.symbolDocumenter.documents[fileuri]
+              for (var fsPath in this.symbolDocumenter.documents) { // search files that include this one
+                     table = this.symbolDocumenter.documents[fsPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            fileuri = vscode.Uri.parse(fileuri)
-                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(fileuri.fsPath) == -1) {
-                                   this.addEdits(fileuri, searched, edits, newName, oldName)
+                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(fsPath) == -1) {
+                                   const docuri = vscode.Uri.file(fsPath)
+                                   this.addEdits(docuri, searched, edits, newName, oldName)
                             }
                      }
               }

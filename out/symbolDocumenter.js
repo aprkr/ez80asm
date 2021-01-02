@@ -15,21 +15,21 @@ const wordregex = /[\$\%]?[\w\.]+/g
 const nonRegRegex = /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)|\b([A-Fa-f0-9]+h\b)|\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b|\b(equ|set)\b/gi
 
 class SymbolDescriptor {
-       constructor(line, kind, documentation, uri, name) {
+       constructor(line, kind, documentation, fsPath, name) {
               this.line = line
               this.kind = kind
               this.documentation = documentation
-              this.uri = uri
+              this.fsPath = fsPath
               this.name = name
        }
 }
 class possibleRef {
-       constructor(line, startChar, endChar, text, uri) {
+       constructor(line, startChar, endChar, text, fsPath) {
               this.line = line
               this.startChar = startChar
               this.endChar = endChar
               this.text = text
-              this.uri = uri
+              this.fsPath = fsPath
        }
        get range() {
               return new vscode.Range(this.line, this.startChar, this.line, this.endChar)
@@ -37,13 +37,16 @@ class possibleRef {
        get location() {
               return new vscode.Location(this.uri, this.range)
        }
+       get uri() {
+              return vscode.Uri.file(this.fsPath)
+       }
 }
 class DocumentTable {
        constructor(uri) {
               if (uri.fsPath.match(/^.+\.inc/)) {
                      this.includes = []
                      this.includeFileLines = []
-                     this.path = uri.fsPath
+                     this.fsPath = uri.fsPath
                      this.symbolDeclarations = {}
                      this.lineCount = 0;
                      this.possibleRefs = []
@@ -52,7 +55,7 @@ class DocumentTable {
                      this.includes = []
                      this.includeFileLines = []
                      // this.directory = path.dirname(uri.fsPath)
-                     this.path = uri.fsPath
+                     // this.path = uri.fsPath
                      this.symbolDeclarations = {}
                      this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
                      this.diagnosticCollection.array = []
@@ -73,11 +76,16 @@ class symbolDocumenter {
               this.extensionPath = (vscode.extensions.getExtension("alex-parker.ez80-asm")).extensionPath;
               this.cacheFolder = path.join(this.extensionPath, "/caches")
        }
+       /**
+        * 
+        * @param {vscode.TextDocument} document 
+        * @param {vscode.TextDocumentChangeEvent} event 
+        */
        declareSymbols(document, event) {
               if (!event) {
                      const table = this.readTableFromFile(document)
-                     if (table && table.path == document.uri.fsPath) {
-                            this.documents[document.uri] = table
+                     if (table && table.fsPath == document.uri.fsPath) {
+                            this.documents[document.uri.fsPath] = table
                             return
                      }
               }
@@ -96,7 +104,7 @@ class symbolDocumenter {
               let startLine = 0;
               let endLine = document.lineCount;
               if (event && event.contentChanges.length > 0) {
-                     table = this.documents[document.uri];
+                     table = this.documents[document.uri.fsPath];
                      startLine = event.contentChanges[0].range.start.line
                      endLine = event.contentChanges[0].range.end.line + 1
                      const deleteEndLine = endLine
@@ -174,10 +182,31 @@ class symbolDocumenter {
                                    continue
                             }
                      }
+                     const diagnosticsArray = table.diagnosticCollection.array
+                     for (let i = 0; i < diagnosticsArray.length; i++) {
+                            let range = diagnosticsArray[i].range
+                            let diagLine = range.start.line
+                            if (diagLine >= startLine && diagLine < deleteEndLine) {
+                                   diagnosticsArray.splice(i, 1)
+                                   i--
+                                   continue
+                            }
+                            if (lineDiff && diagLine > startLine) {
+                                   diagLine += document.lineCount - table.lineCount
+                                   if (diagLine < 0) {
+                                          diagnosticsArray.splice(i, 1)
+                                          i--
+                                          continue
+                                   } else {
+                                          diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
+                                   }
+                            }
+                     }
+                     table.lineCount = document.lineCount
               } else {
                      table.lineCount = document.lineCount
               }
-              this.documents[document.uri] = table;
+              this.documents[document.uri.fsPath] = table;
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber);
                      if (line.text.match(/(^\s*$)|(^:.*)/)) {
@@ -201,7 +230,7 @@ class symbolDocumenter {
                                           }
                                           const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
                                           const endChar = startChar + wordmatch[index].length
-                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri)
+                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri.fsPath)
                                           table.possibleRefs.push(ref)
                                    }
                                    char += wordmatch[index].length;
@@ -237,7 +266,7 @@ class symbolDocumenter {
                             }
                             const name = declaration.replace(/:/g, "");
                             let documentation = this.getDocumentation(document, lineNumber, kind);
-                            const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri, name);
+                            const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
                             if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
                                    table.reDefinitions.push(symbol)
                                    continue
@@ -250,6 +279,12 @@ class symbolDocumenter {
                      this.writeTableToFile(document)
               }
        }
+       /**
+        * 
+        * @param {vscode.TextDocument} document 
+        * @param lineNumber 
+        * @param kind 
+        */
        getDocumentation(document, lineNumber, kind) {
               if (lineNumber == 0) {
                      return undefined
@@ -287,7 +322,7 @@ class symbolDocumenter {
               let simpleJoin = path.resolve(fsRelativeDir, filename);
               if (fs.existsSync(simpleJoin)) {
                      let includeUri = vscode.Uri.file(simpleJoin);
-                     const table = this.documents[includeUri]; // this.files is very picky
+                     const table = this.documents[includeUri.fsPath]; // this.files is very picky
                      if (table == undefined) {
                             vscode.workspace.openTextDocument(includeUri).then((document) => {
                                    this.declareSymbols(document);
@@ -313,7 +348,7 @@ class symbolDocumenter {
                      var joined = path.resolve(includePath, filename);
                      if (fs.existsSync(joined)) {
                             let includeUri = vscode.Uri.file(joined);
-                            const table = this.documents[includeUri]; // this.files is very picky
+                            const table = this.documents[includeUri.fsPath]; // this.files is very picky
                             if (table == undefined) {
                                    vscode.workspace.openTextDocument(includeUri).then((document) => {
                                           this.declareSymbols(document);
@@ -325,8 +360,12 @@ class symbolDocumenter {
               // Nothing found, return the empty string.
               return "";
        }
+       /**
+        * 
+        * @param {vscode.TextDocument} document 
+        */
        writeTableToFile(document) {
-              const docTable = this.documents[document.uri]
+              const docTable = this.documents[document.uri.fsPath]
               const json = JSON.stringify(docTable)
               const base = path.basename(document.fileName)
               const cachePath = path.join(this.cacheFolder, base + ".json");
@@ -336,6 +375,10 @@ class symbolDocumenter {
                      }
               })
        }
+       /**
+        * 
+        * @param {vscode.TextDocument} document 
+        */
        readTableFromFile(document) {
               const base = path.basename(document.fileName)
               const cachePath = path.join(this.cacheFolder, base + ".json");
@@ -345,14 +388,20 @@ class symbolDocumenter {
               const table = JSON.parse(fs.readFileSync(cachePath, "utf8"));
               return table
        }
+       /**
+        * 
+        * @param {vscode.Uri} uri 
+        * @param {[]} searched 
+        * @param {{}} output 
+        */
        getAvailableSymbols(uri, searched, output) {
               if (!output || !searched) {
                      searched = []
                      output = {}
               }
-              let table = this.documents[uri]
+              let table = this.documents[uri.fsPath]
               searched.push(uri.fsPath)
-              for (var name in table.symbolDeclarations) { // search the current uri
+              for (var name in table.symbolDeclarations) { // search the current fsPath
                      output[name] = table.symbolDeclarations[name]
               }
               for (let i = 0; i < table.includes.length; i++) { // search included files
@@ -360,12 +409,12 @@ class symbolDocumenter {
                             this.getAvailableSymbols(table.includes[i], searched, output)
                      }
               }
-              for (var fileuri in this.documents) { // search files that include this one
-                     table = this.documents[fileuri]
+              for (var docPath in this.documents) { // search files that include this one
+                     table = this.documents[docPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            fileuri = vscode.Uri.parse(fileuri)
-                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(fileuri.fsPath) == -1) {
-                                   this.getAvailableSymbols(fileuri, searched, output)
+                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(docPath) == -1) {
+                                   const docUri = vscode.Uri.file(docPath)
+                                   this.getAvailableSymbols(docUri, searched, output)
                             }
                      }
               }
@@ -386,3 +435,4 @@ class symbolDocumenter {
 exports.symbolDocumenter = symbolDocumenter
 exports.SymbolDescriptor = SymbolDescriptor
 exports.possibleRef = possibleRef
+exports.DocumentTable = DocumentTable
