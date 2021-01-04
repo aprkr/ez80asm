@@ -188,14 +188,13 @@ class ASMCompletionProposer {
      */
     provideCompletionItems(document, position, token, context) {
         let output = [];
-        if (vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
+        const line = document.lineAt(position.line)
+        const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
+        if (line.text.match(/^\s+\w*$/) && vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
             this.instructionItems.forEach((item) => {
                 output.push(item);
             })
-        }
-        const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
-        const line = document.lineAt(position.line)
-        if (!line.text.match(/^\s*\w+\s*$/)) {
+        } else {
             for (const name in symbols) {
                 if (symbols.hasOwnProperty(name)) {
                     const symbol = symbols[name];

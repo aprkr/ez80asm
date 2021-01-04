@@ -279,7 +279,7 @@
       "cycles": 3,
       "bytes": 2,
       "flags": {
-        "z": "Set if bit b is 0",
+        "z": "Set if bit is 0",
         "n": "Reset",
         "h": "Set",
         "c": "Not affected",
@@ -292,7 +292,7 @@
       "cycles": 5,
       "bytes": 4,
       "flags": {
-        "z": "Set if bit b is 0",
+        "z": "Set if bit is 0",
         "n": "Reset",
         "h": "Set",
         "c": "Not affected",
@@ -300,12 +300,12 @@
       }
     },
     {
-      "name": "bit b, r8",
+      "name": "bit bit, r8",
       "description": "`Z = ~r8[bit]`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
-        "z": "Set if bit b is 0",
+        "z": "Set if bit is 0",
         "n": "Reset",
         "h": "Set",
         "c": "Not affected",

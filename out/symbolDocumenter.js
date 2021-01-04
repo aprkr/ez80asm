@@ -43,28 +43,19 @@ class possibleRef {
 }
 class DocumentTable {
        constructor(uri) {
-              if (uri.fsPath.match(/^.+\.inc/)) {
-                     this.includes = []
-                     this.includeFileLines = []
-                     this.fsPath = uri.fsPath
-                     this.symbolDeclarations = {}
-                     this.lineCount = 0;
-                     this.possibleRefs = []
-                     this.reDefinitions = []
-              } else {
-                     this.includes = []
-                     this.includeFileLines = []
-                     // this.directory = path.dirname(uri.fsPath)
-                     // this.path = uri.fsPath
-                     this.symbolDeclarations = {}
-                     this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
-                     this.diagnosticCollection.array = []
-                     this.diagnosticCollection.symarray = []
-                     this.diagnosticCollection.redefArray = []
-                     this.lineCount = 0;
-                     this.possibleRefs = []
-                     this.reDefinitions = []
-              }
+              this.includes = []
+              this.includeFileLines = []
+              this.fsPath = uri.fsPath
+              // this.directory = path.dirname(uri.fsPath)
+              // this.path = uri.fsPath
+              this.symbolDeclarations = {}
+              this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
+              this.diagnosticCollection.array = []
+              this.diagnosticCollection.symarray = []
+              this.diagnosticCollection.redefArray = []
+              this.lineCount = 0;
+              this.possibleRefs = []
+              this.reDefinitions = []
        }
        get fullArray() {
               return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
@@ -223,17 +214,18 @@ class symbolDocumenter {
                      const wordmatch = nonCommentMatch.match(wordregex);
                      if (!line.text.match(/(^section)|(^\s*\#)|(^\s*if)|(^.+macro)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
                             let char = 0
+                            let startChar = 0
                             for (let index = 1; index < wordmatch.length; ++index) {
                                    if (!wordmatch[index].match(nonRegRegex)) {
                                           if (index == 1 && wordmatch[index].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
                                                  continue
                                           }
-                                          const startChar = nonCommentMatch.indexOf(wordmatch[index], char);
+                                          startChar = nonCommentMatch.indexOf(wordmatch[index], char);
                                           const endChar = startChar + wordmatch[index].length
                                           const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri.fsPath)
                                           table.possibleRefs.push(ref)
                                    }
-                                   char += wordmatch[index].length;
+                                   char = startChar + wordmatch[index].length;
                             }
                      }
                      if (includeLineMatch) {

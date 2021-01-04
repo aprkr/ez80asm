@@ -20,14 +20,14 @@ class main {
                             setTimeout(() => { this.diagnosticProvider.getDiagnostics(document) }, 2000)
                      } else {
                             this.diagnosticProvider.getDiagnostics(document, event)
-                     }                     
+                     }
               }
               vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
                      files.forEach((fileURI) => {
                             vscode.workspace.openTextDocument(fileURI).then((document) => {
                                    if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
                                           scanDoc(document);
-                                   }  
+                                   }
                             });
                      });
               });
@@ -36,7 +36,7 @@ class main {
                             vscode.workspace.openTextDocument(fileURI).then((document) => {
                                    if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
                                           scanDoc(document);
-                                   }  
+                                   }
                             });
                      });
               });
@@ -62,6 +62,27 @@ class main {
                      clearTimeout(otherDocTimeout)
                      scanDoc(event.document, event)
                      otherDocTimeout = setTimeout(() => { diagnoseOtherDocs(event.document) }, 300)
+              })
+              vscode.workspace.onDidRenameFiles((event) => {
+                     for (let i = 0; i < event.files.length; i++) {
+                            const oldfsPath = event.files[i].oldUri.fsPath
+                            const oldTable = this.symbolDocumenter.documents[oldfsPath]
+                            if (oldTable) {
+                                   const newTable = oldTable
+                                   const newUri = event.files[i].newUri
+                                   const newfsPath = newUri.fsPath
+                                   newTable.fsPath = newfsPath
+                                   oldTable.diagnosticCollection.clear()
+                                   delete this.symbolDocumenter.documents[oldfsPath]
+                                   newTable.diagnosticCollection.set(newfsPath, newTable.fullArray)
+                                   this.symbolDocumenter.documents[newfsPath] = newTable
+                            }
+                     }
+              })
+              vscode.workspace.onDidDeleteFiles((event) => {
+                     for (let i = 0; i < event.files.length; i++) {
+                            delete this.symbolDocumenter.documents[event.files[i].fsPath]
+                     }
               })
               if (vscode.window.activeTextEditor && !this.symbolDocumenter.documents[vscode.window.activeTextEditor.document.uri.fsPath]) { // if there is an currently open file
                      scanDoc(vscode.window.activeTextEditor.document)
