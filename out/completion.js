@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
+const regRegex = /\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b/i
 /**
  * Provides the completions items for Intellisense,
  * uses instruction.json to create snippets and the 
@@ -190,6 +191,7 @@ class ASMCompletionProposer {
         let output = [];
         const line = document.lineAt(position.line)
         const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
+        const range = document.getWordRangeAtPosition(position, regRegex)
         if (line.text.match(/^\s+\w*$/) && vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
             this.instructionItems.forEach((item) => {
                 output.push(item);
@@ -211,6 +213,9 @@ class ASMCompletionProposer {
                     }
                     output.push(item);
                 }
+            }
+            if (range) {
+                output.push(new vscode.CompletionItem(document.getText(range), vscode.CompletionItemKind.Keyword))
             }
         }
         return output;

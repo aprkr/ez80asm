@@ -43,6 +43,8 @@ class possibleRef {
 }
 class DocumentTable {
        constructor(uri) {
+              const file = fs.statSync(uri.fsPath)
+              this.lastModified = file.mtimeMs
               this.includes = []
               this.includeFileLines = []
               this.fsPath = uri.fsPath
@@ -75,7 +77,8 @@ class symbolDocumenter {
        declareSymbols(document, event) {
               if (!event) {
                      const table = this.readTableFromFile(document)
-                     if (table && table.fsPath == document.uri.fsPath) {
+                     const file = fs.statSync(document.uri.fsPath)
+                     if (table && table.fsPath == document.uri.fsPath && table.lastModified == file.mtimeMs) {
                             this.documents[document.uri.fsPath] = table
                             return
                      }
@@ -268,7 +271,6 @@ class symbolDocumenter {
               }
               if (document.fileName.match(/.+\.inc/i)) {
                      table.possibleRefs = []
-                     this.writeTableToFile(document)
               }
        }
        /**

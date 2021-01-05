@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const imports = require("./imports")
+const fs = require("fs")
 
 class main {
        /**
@@ -24,26 +25,32 @@ class main {
               }
               vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
                      files.forEach((fileURI) => {
-                            vscode.workspace.openTextDocument(fileURI).then((document) => {
-                                   if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
+                            if (!this.symbolDocumenter.documents[fileURI.fsPath]) {
+                                   vscode.workspace.openTextDocument(fileURI).then((document) => {
                                           scanDoc(document);
-                                   }
-                            });
+                                   });
+                            }
                      });
               });
               vscode.workspace.findFiles("**/*.{ez80,z80,asm}", null, 2).then((files) => {
                      files.forEach((fileURI) => {
-                            vscode.workspace.openTextDocument(fileURI).then((document) => {
-                                   if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
+                            if (!this.symbolDocumenter.documents[fileURI.fsPath]) {
+                                   vscode.workspace.openTextDocument(fileURI).then((document) => {
                                           scanDoc(document);
-                                   }
-                            });
+                                   });
+                            }
                      });
               });
+              /**
+               * @param {vscode.TextDocument} document 
+               */
               const docOpened = (document) => { // if a file was just opened
                      if (!this.symbolDocumenter.documents[document.uri.fsPath] && document.fileName.match(/(ez80|z80|inc|asm)$/i)) {
                             scanDoc(document)
-                            setTimeout(() => { diagnoseOtherDocs(document) }, 2100)
+                            setTimeout(() => { diagnoseOtherDocs(document) }, 2000)
+                     }
+                     if (document.fileName.match(/^.+\.inc$/)) {
+                            this.symbolDocumenter.writeTableToFile(document)
                      }
               }
               const diagnoseOtherDocs = (document) => { // check references in other files
@@ -61,7 +68,7 @@ class main {
               vscode.workspace.onDidChangeTextDocument((event) => { // if the file changed, update symbols and diagnostics, and check references for other files
                      clearTimeout(otherDocTimeout)
                      scanDoc(event.document, event)
-                     otherDocTimeout = setTimeout(() => { diagnoseOtherDocs(event.document) }, 300)
+                     otherDocTimeout = setTimeout(() => { diagnoseOtherDocs(event.document) }, 200)
               })
               vscode.workspace.onDidRenameFiles((event) => {
                      for (let i = 0; i < event.files.length; i++) {
@@ -82,6 +89,13 @@ class main {
               vscode.workspace.onDidDeleteFiles((event) => {
                      for (let i = 0; i < event.files.length; i++) {
                             delete this.symbolDocumenter.documents[event.files[i].fsPath]
+                     }
+              })
+              vscode.workspace.onDidSaveTextDocument((document) => {
+                     if (document.fileName.match(/^.+\.inc$/)) {
+                            const file = fs.statSync(document.uri.fsPath)
+                            this.symbolDocumenter.documents[document.uri.fsPath].lastModified = file.mtimeMs
+                            this.symbolDocumenter.writeTableToFile(document)
                      }
               })
               if (vscode.window.activeTextEditor && !this.symbolDocumenter.documents[vscode.window.activeTextEditor.document.uri.fsPath]) { // if there is an currently open file
