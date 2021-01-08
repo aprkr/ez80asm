@@ -1,7 +1,7 @@
 {
 	"name": "ez80-asm",
 	"displayName": "EZ80 Assembly",
-	"description": "EZ80 and Z80 Assembly syntax highlighting for Visual Studio Code",
+	"description": "EZ80 Assembly syntax highlighting for Visual Studio Code",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/LiberalEater/ez80asm.git"
@@ -16,7 +16,7 @@
 	},
 	"activationEvents": [
 		"onLanguage:ez80-asm",
-		"workspaceContains:**/*.{ez80,z80}"
+		"workspaceContains:**/*.{ez80}"
 	],
 	"main": "./out/extension.js",
 	"categories": [
@@ -24,9 +24,7 @@
 	],
 	"keywords": [
 		"assembly",
-		"z80",
-		"ez80",
-		"game boy"
+		"ez80"
 	],
 	"contributes": {
 		"languages": [
@@ -36,8 +34,6 @@
 					"EZ80 Assembly"
 				],
 				"extensions": [
-					".asm",
-					".z80",
 					".ez80",
 					".inc"
 				],

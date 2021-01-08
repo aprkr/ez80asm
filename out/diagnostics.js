@@ -158,12 +158,6 @@ class diagnosticProvider {
                             const textLength = nonCommentMatch.length
                             let diagline = nonCommentMatch
                             diagline = diagline.replace(numberRegex, "number");
-                            if (diagline.match(/b_call\((?=.+)/i)) {
-                                   diagline = diagline.replace(/b_call\((?=.+)/i, "call ")
-                                   if (diagline.endsWith(")")) {
-                                          diagline = diagline.subString(0, diagline.length - 1)
-                                   }
-                            }
                             const diagwordmatch = diagline.match(wordregex);
                             let opcodeskip = false
                             let invalid = true

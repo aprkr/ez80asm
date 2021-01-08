@@ -1,5 +1,5 @@
-## EZ80 and Z80 Assembly for Visual Studio Code
-The (E)Z80 Assembly extension for Visual Studio provides language support for EZ80 and Z80 Assembly, including:
+## EZ80 Assembly for Visual Studio Code
+The EZ80 Assembly extension for Visual Studio provides language support for EZ80 Assembly, if you want an extension for z80 and gameboy z80 I also have extensions for those
 
 ### Syntax Highlighting
 * Labels
@@ -29,7 +29,7 @@ The (E)Z80 Assembly extension for Visual Studio provides language support for EZ
 * Make sure you have semantic highlighting on in settings
 
 ### Diagnostic Provider
-* Note that these diagnostics are specific to the ez80 CPU
+* Note that these diagnostics are specific to the ez80 CPU and spasm-ng assembler
 * Error checking while you type
 * Can be disabled in settings
 * Can check for duplicate declarations in a document (but not included files)

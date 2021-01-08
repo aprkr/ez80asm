@@ -1,3 +1,9 @@
+## 1.4.3
+* Removed support for non-ez80 assembly
+
+## 1.4.2
+* More fixes
+
 ## 1.4.1
 * Minor fix when getting symbol names
 

@@ -209,7 +209,7 @@ class symbolDocumenter {
                      let nonCommentMatch = line.text.match(nonCommentRegex)
                      nonCommentMatch = nonCommentMatch[0].replace(/(\".+\")|(\'.+\')/g, "")
                      const wordmatch = nonCommentMatch.match(wordregex);
-                     if (!line.text.match(/(^section)|(^\s*\#)|(^\s*if)|(^.+macro)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
+                     if (!line.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
                             let char = 0
                             let startChar = 0
                             for (let index = 1; index < wordmatch.length; ++index) {

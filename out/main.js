@@ -14,7 +14,7 @@ class main {
               this.symbolDocumenter = symbolDocumenter
               this.diagnosticProvider = diagnosticProvider
               const scanDoc = async (document, event) => {
-                     if (!document.fileName.match(/(ez80|z80|inc|asm)$/i)) {
+                     if (!document.fileName.match(/(ez80|inc)$/i)) {
                             return
                      }
                      this.symbolDocumenter.declareSymbols(document, event)
@@ -24,7 +24,7 @@ class main {
                             this.diagnosticProvider.getDiagnostics(document, event)
                      }
               }
-              vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
+              vscode.workspace.findFiles("**/*{Main,main}.{ez80}", null, 1).then((files) => {
                      files.forEach((fileURI) => {
                             vscode.workspace.openTextDocument(fileURI).then((document) => {
                                    if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
@@ -33,7 +33,7 @@ class main {
                             });
                      });
               });
-              vscode.workspace.findFiles("**/*.{ez80,z80,asm}", null, 2).then((files) => {
+              vscode.workspace.findFiles("**/*.{ez80}", null, 2).then((files) => {
                      files.forEach((fileURI) => {
                             vscode.workspace.openTextDocument(fileURI).then((document) => {
                                    if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
@@ -46,7 +46,7 @@ class main {
                * @param {vscode.TextDocument} document 
                */
               const docOpened = (document) => { // if a file was just opened
-                     if (!this.symbolDocumenter.documents[document.uri.fsPath] && document.fileName.match(/(ez80|z80|inc|asm)$/i)) {
+                     if (!this.symbolDocumenter.documents[document.uri.fsPath] && document.fileName.match(/(ez80|inc)$/i)) {
                             scanDoc(document)
                             setTimeout(() => { diagnoseOtherDocs(document) }, 2000)
                      }

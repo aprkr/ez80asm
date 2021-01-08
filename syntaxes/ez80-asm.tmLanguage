@@ -31,14 +31,7 @@
 
 		<dict>
 			<key>match</key>
-			<string>(?i)(\b|\.)(org|ds|db|dw|dl|assume|list|nolist|end)\b</string>
-			<key>name</key>
-			<string>keyword.control.directive.ez80</string>
-		</dict>
-
-		<dict>
-			<key>match</key>
-			<string>(?i)(\b|\.)(DEFM|DEFB|DEFS|DEFW|EQU|ENT|DISP)\b</string>
+			<string>(?i)(\b|\.)(org|ds|db|dw|dl|assume|list|nolist|end|equ)\b</string>
 			<key>name</key>
 			<string>keyword.control.directive.ez80</string>
 		</dict>
@@ -86,13 +79,6 @@
 			<string>(?i)\s(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL)\b</string>
 			<key>name</key>
 			<string>keyword.control.opcodes.ez80</string>
-		</dict>
-
-		<dict>
-			<key>match</key>
-			<string>(?i)\s(b_call)</string>
-			<key>name</key>
-			<string>keyword.control.bcall.ez80</string>
 		</dict>
 
 		<!--Opcode suffixes-->
