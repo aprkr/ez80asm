@@ -57,6 +57,14 @@ class diagnosticProvider {
               if (document.fileName.match(/^.+\.inc$/)) {
                      return
               }
+              if (event && event.contentChanges.length > 1) {
+                     for (let i = 1; i < event.contentChanges.length; i++) {
+                            const pseudoEvent = {}
+                            pseudoEvent.contentChanges = []
+                            pseudoEvent.contentChanges.push(event.contentChanges[i])
+                            this.getDiagnostics(document, pseudoEvent)
+                     }
+              }
               const table = this.symbolDocumenter.documents[document.uri.fsPath]
               let collection = table.diagnosticCollection
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)

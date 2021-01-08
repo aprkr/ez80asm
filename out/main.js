@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const imports = require("./imports")
 const fs = require("fs")
+const path = require("path")
 
 class main {
        /**
@@ -25,20 +26,20 @@ class main {
               }
               vscode.workspace.findFiles("**/*{Main,main}.{ez80,z80,asm}", null, 1).then((files) => {
                      files.forEach((fileURI) => {
-                            if (!this.symbolDocumenter.documents[fileURI.fsPath]) {
-                                   vscode.workspace.openTextDocument(fileURI).then((document) => {
+                            vscode.workspace.openTextDocument(fileURI).then((document) => {
+                                   if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
                                           scanDoc(document);
-                                   });
-                            }
+                                   }
+                            });
                      });
               });
               vscode.workspace.findFiles("**/*.{ez80,z80,asm}", null, 2).then((files) => {
                      files.forEach((fileURI) => {
-                            if (!this.symbolDocumenter.documents[fileURI.fsPath]) {
-                                   vscode.workspace.openTextDocument(fileURI).then((document) => {
+                            vscode.workspace.openTextDocument(fileURI).then((document) => {
+                                   if (!this.symbolDocumenter.documents[document.uri.fsPath]) {
                                           scanDoc(document);
-                                   });
-                            }
+                                   }
+                            });
                      });
               });
               /**
@@ -49,7 +50,7 @@ class main {
                             scanDoc(document)
                             setTimeout(() => { diagnoseOtherDocs(document) }, 2000)
                      }
-                     if (document.fileName.match(/^.+\.inc$/)) {
+                     if (this.symbolDocumenter.documents[document.uri.fsPath]) {
                             this.symbolDocumenter.writeTableToFile(document)
                      }
               }
@@ -75,6 +76,11 @@ class main {
                             const oldfsPath = event.files[i].oldUri.fsPath
                             const oldTable = this.symbolDocumenter.documents[oldfsPath]
                             if (oldTable) {
+                                   const base = path.basename(oldfsPath)
+                                   const oldCachePath = path.join(this.symbolDocumenter.cacheFolder, base + ".json");
+                                   fs.unlink(oldCachePath, (error) => {
+                                          console.log(error.message)
+                                   })
                                    const newTable = oldTable
                                    const newUri = event.files[i].newUri
                                    const newfsPath = newUri.fsPath
@@ -92,7 +98,7 @@ class main {
                      }
               })
               vscode.workspace.onDidSaveTextDocument((document) => {
-                     if (document.fileName.match(/^.+\.inc$/)) {
+                     if (this.symbolDocumenter.documents[document.uri.fsPath]) {
                             const file = fs.statSync(document.uri.fsPath)
                             this.symbolDocumenter.documents[document.uri.fsPath].lastModified = file.mtimeMs
                             this.symbolDocumenter.writeTableToFile(document)

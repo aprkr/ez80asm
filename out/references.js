@@ -28,21 +28,21 @@ class referenceProvider {
                                    const uri = vscode.Uri.file(symbol.fsPath)
                                    output.push(new vscode.Location(uri, range))
                             }
-                            output = output.concat(this.findRefs(document.uri, [], [], symbol.name))
+                            output = output.concat(this.findRefs(document.uri.fsPath, [], [], symbol.name))
                             return output
                      }
               }
        }
        /**
         * 
-        * @param {vscode.Uri} uri 
+        * @param {String} docPath 
         * @param {[]} searched 
         * @param {*} output 
         * @param {String} name 
         */
-       findRefs(uri, searched, output, name) {
-              let table = this.symbolDocumenter.documents[uri.fsPath]
-              searched.push(uri.fsPath)
+       findRefs(docPath, searched, output, name) {
+              let table = this.symbolDocumenter.documents[docPath]
+              searched.push(docPath)
               for (let i = 0; i < table.possibleRefs.length; i++) {
                      let match = false
                      if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
@@ -62,9 +62,8 @@ class referenceProvider {
               for (var fsPath in this.symbolDocumenter.documents) { // search files that include this one
                      table = this.symbolDocumenter.documents[fsPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(fsPath) == -1) {
-                                   const docuri = vscode.Uri.file(fsPath)
-                                   this.findRefs(docuri, searched, output, name)
+                            if (table.includes[i] === docPath && searched.indexOf(fsPath) == -1) {
+                                   this.findRefs(fsPath, searched, output, name)
                             }
                      }
               }

@@ -43,8 +43,7 @@ class possibleRef {
 }
 class DocumentTable {
        constructor(uri) {
-              const file = fs.statSync(uri.fsPath)
-              this.lastModified = file.mtimeMs
+              this.lastModified = (fs.statSync(uri.fsPath)).mtimeMs
               this.includes = []
               this.includeFileLines = []
               this.fsPath = uri.fsPath
@@ -76,12 +75,7 @@ class symbolDocumenter {
         */
        declareSymbols(document, event) {
               if (!event) {
-                     const table = this.readTableFromFile(document)
-                     const file = fs.statSync(document.uri.fsPath)
-                     if (table && table.fsPath == document.uri.fsPath && table.lastModified == file.mtimeMs) {
-                            this.documents[document.uri.fsPath] = table
-                            return
-                     }
+                     this.readTableFromFile(document.uri.fsPath)
               }
               if (event && event.contentChanges.length == 0) {
                      return
@@ -244,8 +238,8 @@ class symbolDocumenter {
                                    continue
                             }
                             const includeUri = vscode.Uri.file(filePath);
-                            if (table.includes.indexOf(includeUri) == -1) {
-                                   table.includes.push(includeUri);
+                            if (table.includes.indexOf(includeUri.fsPath) == -1) {
+                                   table.includes.push(includeUri.fsPath);
                                    table.includeFileLines.push(lineNumber)
                             }
                      } else if (labelMatch) {
@@ -365,22 +359,40 @@ class symbolDocumenter {
               const cachePath = path.join(this.cacheFolder, base + ".json");
               fs.writeFile(cachePath, json, (error) => {
                      if (error) {
-                            console.log("Error while writing to " + cachePath)
+                            console.log(error.message)
                      }
               })
        }
        /**
         * 
-        * @param {vscode.TextDocument} document 
+        * @param {String} fsPath 
         */
-       readTableFromFile(document) {
-              const base = path.basename(document.fileName)
+       readTableFromFile(fsPath) {
+              const base = path.basename(fsPath)
               const cachePath = path.join(this.cacheFolder, base + ".json");
               if (!fs.existsSync(cachePath)) {
                      return null
               }
+              const fileStats = fs.statSync(fsPath)
               const table = JSON.parse(fs.readFileSync(cachePath, "utf8"));
-              return table
+              for (let i = 0; i < table.possibleRefs.length; i++) {
+                     const ref = table.possibleRefs[i]
+                     table.possibleRefs[i] = new possibleRef(ref.line, ref.startChar, ref.endChar, ref.text, table.fsPath)
+              }
+              table.fullArray = () => {
+                     return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
+              }
+              if (table && table.fsPath == fsPath && table.lastModified == fileStats.mtimeMs) {
+                     this.documents[fsPath] = table
+                     const diagnostics = vscode.languages.createDiagnosticCollection();
+                     diagnostics.array = table.diagnosticCollection.array
+                     diagnostics.symarray = table.diagnosticCollection.symarray
+                     diagnostics.redefArray = table.diagnosticCollection.redefArray
+                     table.diagnosticCollection = diagnostics
+                     for (let i = 0; i < table.includes.length; i++) {
+                            this.readTableFromFile(table.includes[i])
+                     }
+              }
        }
        /**
         * 
@@ -399,14 +411,15 @@ class symbolDocumenter {
                      output[name] = table.symbolDeclarations[name]
               }
               for (let i = 0; i < table.includes.length; i++) { // search included files
-                     if (searched.indexOf(table.includes[i].fsPath) == -1) {
-                            this.getAvailableSymbols(table.includes[i], searched, output)
+                     if (searched.indexOf(table.includes[i]) == -1) {
+                            const includeUri = vscode.Uri.file(table.includes[i])
+                            this.getAvailableSymbols(includeUri, searched, output)
                      }
               }
               for (var docPath in this.documents) { // search files that include this one
                      table = this.documents[docPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(docPath) == -1) {
+                            if (table.includes[i] === uri.fsPath && searched.indexOf(docPath) == -1) {
                                    const docUri = vscode.Uri.file(docPath)
                                    this.getAvailableSymbols(docUri, searched, output)
                             }

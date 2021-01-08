@@ -50,7 +50,7 @@ class renameProvider {
                             let edits = new vscode.WorkspaceEdit()
                             const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
                             edits.replace(uri, range, newName)
-                            this.addEdits(document.uri, [], edits, newName, text) // this will grab all the edits
+                            this.addEdits(document.uri.fsPath, [], edits, newName, text) // this will grab all the edits
                             return edits
                      }
               }
@@ -59,15 +59,15 @@ class renameProvider {
        }
        /**
         * 
-        * @param {vscode.Uri} uri 
+        * @param curfsPath 
         * @param {[]} searched 
         * @param {vscode.WorkspaceEdit} edits 
         * @param {String} newName 
         * @param {String} oldName 
         */
-       addEdits(uri, searched, edits, newName, oldName) {
-              let table = this.symbolDocumenter.documents[uri.fsPath]
-              searched.push(uri.fsPath)
+       addEdits(curfsPath, searched, edits, newName, oldName) {
+              let table = this.symbolDocumenter.documents[curfsPath]
+              searched.push(curfsPath)
               let length = table.possibleRefs.length
               for (let i = 0; i < length; i++) {
                      let match = false
@@ -94,9 +94,8 @@ class renameProvider {
               for (var fsPath in this.symbolDocumenter.documents) { // search files that include this one
                      table = this.symbolDocumenter.documents[fsPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            if (table.includes[i].fsPath === uri.fsPath && searched.indexOf(fsPath) == -1) {
-                                   const docuri = vscode.Uri.file(fsPath)
-                                   this.addEdits(docuri, searched, edits, newName, oldName)
+                            if (table.includes[i].fsPath === curfsPath && searched.indexOf(fsPath) == -1) {
+                                   this.addEdits(fsPath, searched, edits, newName, oldName)
                             }
                      }
               }
