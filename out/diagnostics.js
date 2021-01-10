@@ -14,6 +14,16 @@ const opcodeRegex = /\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|C
 const noOperandOpcodeRegex = /\b(DAA|NEG|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EXX|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|CCF|DI|EI|HALT|NOP|RSMIX|SCF|SLP|STMIX|RETI|RETN|RLA|RLCA|RRA|RRCA|RRD)\b/i;
 const suffixRegex = /(\.)(LIL|LIS|SIL|SIS|L|S)\b/i;
 const todoRegex = /.*;\s*todo\b:?\s*(.*)/i
+const bitopcodes = /\b(bit|res|set)\s+(\w+)\b/i
+const replacementRegex = /((\+|\b)(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB|Z|NZ|C|NC|P|M|PO|PE)(\+|\b))/gi
+const validNumber = "number"
+const evalReg = new RegExp(validNumber + "|" + replacementRegex.source, "gi")
+const valid = "valid"
+const validRegex = new RegExp("\\b" + valid + "\\b", "g")
+const bigNumber = "mmn"
+const smallNumber = "n"
+const offset = "d"
+
 
 /**
  * This does a lot, scans table.possibleRefs, checks if opcodes/operands are correct, checks for duplicate declarations
@@ -105,7 +115,7 @@ class diagnosticProvider {
                             endLine += newLinematch.length
                      } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
                             endLine = startLine + 1
-                     }  
+                     }
               }
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber)
@@ -157,7 +167,7 @@ class diagnosticProvider {
                             }
                             const textLength = nonCommentMatch.length
                             let diagline = nonCommentMatch
-                            diagline = diagline.replace(numberRegex, "number");
+                            diagline = diagline.replace(numberRegex, validNumber);
                             const diagwordmatch = diagline.match(wordregex);
                             let opcodeskip = false
                             let invalid = true
@@ -175,7 +185,7 @@ class diagnosticProvider {
                                           diagnosticsArray.push(new vscode.Diagnostic(range, "Unknown ez80 opcode"));
                                           return diagnosticsArray;
                                    } else if (diagwordmatch[0].match(noOperandOpcodeRegex)) { // if the opcode doesn't use an operand
-                                          if (diagwordmatch.length > 1) {     
+                                          if (diagwordmatch.length > 1) {
                                                  const range = new vscode.Range(lineNumber, startChar, lineNumber, endChar)
                                                  diagnosticsArray.push(new vscode.Diagnostic(range, "No operand needed for this opcode"));
                                                  return diagnosticsArray;
@@ -189,7 +199,7 @@ class diagnosticProvider {
                             if (!opcodeskip) {
                                    for (let i = 1; i < diagwordmatch.length; i++) {    // replace all the symbols with "number"
                                           if (this.symbolDocumenter.checkSymbol(diagwordmatch[i], document.uri, symbols)) {
-                                                 diagline = diagline.replace(diagwordmatch[i], "number")
+                                                 diagline = diagline.replace(diagwordmatch[i], validNumber)
                                           }
                                    }
                                    diagline = this.formatLine(diagline);
@@ -210,6 +220,9 @@ class diagnosticProvider {
                                           }
                                    })
                                    diagline = this.evalOperands(diagline, operands)
+                                   diagline = diagline.replace(bitopcodes, (match) => {
+                                          return match.replace(valid, "bit")
+                                   })
                                    invalid = this.testLine(diagline)
                                    if (invalid) {
                                           const endChar = textLength;
@@ -228,10 +241,8 @@ class diagnosticProvider {
        }
        formatLine(line) {
               line = line.toLowerCase();
-              line = line.replace(/\'.+\'/, "number")
-              line = line.replace(/(ix|iy)\s*(\+|-|\/|\*)\s*/gi, "ix+")
-              line = line.replace(/\[/g, "(")
-              line = line.replace(/\]/g, ")")
+              line = line.replace(/\'.+\'/, validNumber)
+              line = line.replace(/(\+|-|\/|\*)/gi, "+")
               return line
        }
        getOperands(line) {
@@ -247,19 +258,18 @@ class diagnosticProvider {
               return operands
        }
        testLine(line) {
-              line = line.replace(/(ix|iy)\+valid/gi, "ix+d")
               if (this.instructionItemsFull.indexOf(line) != -1) {
                      return false
               }
-              let test = line.replace(/\bvalid\b/g, "mmn")
+              let test = line.replace(validRegex, bigNumber)
               if (this.instructionItemsFull.indexOf(test) != -1) {
                      return false
               }
-              test = line.replace(/\bvalid\b/g, "n")
+              test = line.replace(validRegex, smallNumber)
               if (this.instructionItemsFull.indexOf(test) != -1) {
                      return false
               }
-              test = line.replace(/\bvalid\b/g, "bit")
+              test = line.replace(validRegex, offset)
               if (this.instructionItemsFull.indexOf(test) != -1) {
                      return false
               }
@@ -268,13 +278,16 @@ class diagnosticProvider {
        evalOperands(line, operands) {
               for (let i = 0; i < operands.length; i++) {
                      try {
-                            eval(operands[i].replace(/\b(number|((ix|iy)(?=\+)))/gi, 1))
+                            eval(operands[i].replace(evalReg, 1))
                             let withoutParen = operands[i].match(/(?<=^\()(.*)(?=\)$)/)
                             if (!withoutParen) {
                                    withoutParen = [operands[i]]
                             }
-                            withoutParen[0] = withoutParen[0].replace(/(ix|iy)\+/i, "")
-                            line = line.replace(withoutParen[0], "valid")
+                            withoutParen[0] = withoutParen[0].replace(replacementRegex, "")
+                            if (withoutParen[0] === "") {
+                                   continue
+                            }
+                            line = line.replace(withoutParen[0], valid)
                      } catch (err) {
                      }
               }

@@ -7,9 +7,9 @@ const commentLineRegex = /^\s*;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
 const FILE_NAME = 2;
-const labelDefinitionRegex = /^[\w\.]+:{0,2}((?=\s*;|\s*$)|(?=[\s\.]+equ))/i;
+const labelDefinitionRegex = /^[\w\.]+:{0,2}/i;
 // const equateRegexold = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|set)[\W]+.*$/i;
-const equateRegex = /^\s*[\w\.]+\s+\.?(equ|set)\s.+/i
+const equateRegex = /^[\w\.]+(?=[\s\.]+equ\s+.+$)/i
 const nonCommentRegex = /^([^;]+[^\,\s;])/g
 const wordregex = /[\$\%]?[\w\.]+/g
 const nonRegRegex = /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)|\b([A-Fa-f0-9]+h\b)|\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b|\b(equ|set)\b/gi
@@ -57,6 +57,7 @@ class DocumentTable {
               this.lineCount = 0;
               this.possibleRefs = []
               this.reDefinitions = []
+              this.lines = []
        }
        get fullArray() {
               return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
@@ -71,145 +72,103 @@ class symbolDocumenter {
        /**
         * 
         * @param {vscode.TextDocument} document 
-        * @param {vscode.TextDocumentChangeEvent} event 
+        * @param {vscode.TextDocumentChangeEvent} event
         */
        declareSymbols(document, event) {
-              if (!event) {
-                     this.readTableFromFile(document.uri.fsPath)
-              }
-              if (event && event.contentChanges.length == 0) {
-                     return
-              }
-              if (event && event.contentChanges.length > 1) {
-                     for (let i = 1; i < event.contentChanges.length; i++) {
-                            const pseudoEvent = {}
-                            pseudoEvent.contentChanges = []
-                            pseudoEvent.contentChanges.push(event.contentChanges[i])
-                            this.declareSymbols(document, pseudoEvent)
-                     }
-              }
-              let table = new DocumentTable(document.uri)
-              let startLine = 0;
-              let endLine = document.lineCount;
-              if (event && event.contentChanges.length > 0) {
-                     table = this.documents[document.uri.fsPath];
-                     startLine = event.contentChanges[0].range.start.line
-                     endLine = event.contentChanges[0].range.end.line + 1
-                     const deleteEndLine = endLine
-                     const newLinematch = event.contentChanges[0].text.match(/\n/g)
-                     if (newLinematch) {
-                            endLine += newLinematch.length
-                     } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
-                            endLine = startLine + 1
-                     }
-                     while (endLine < document.lineCount && commentLineRegex.exec(document.lineAt(endLine).text)) {
-                            endLine++
-                     }
-                     if (endLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(endLine).text)) {
-                            let text = document.lineAt(endLine).text.replace(/:/g, "")
-                            text = (text.match(/[\.\w+]+/))[0]
-                            let symbol = this.checkSymbol(text, document.uri, table.symbolDeclarations)
-                            symbol.documentation = this.getDocumentation(document, endLine, symbol.kind)
-                     }
-                     const lineDiff = table.lineCount != document.lineCount
-                     for (var symName in table.symbolDeclarations) {
-                            const symLine = table.symbolDeclarations[symName].line
-                            if (symLine >= startLine && symLine < deleteEndLine) {
-                                   delete table.symbolDeclarations[symName];
-                                   continue
-                            }
-                            if (lineDiff && table.symbolDeclarations[symName].line >= startLine) {
-                                   table.symbolDeclarations[symName].line += document.lineCount - table.lineCount
-                            }
-                     }
-                     for (let i = 0; i < table.reDefinitions.length; i++) {
-                            if (table.reDefinitions[i].line >= startLine && table.reDefinitions[i].line < deleteEndLine) {
-                                   table.reDefinitions.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && table.reDefinitions[i].line >= startLine) {
-                                   table.reDefinitions[i].line += document.lineCount - table.lineCount
-                            }
-                            if (table.reDefinitions[i].line > document.lineCount - 1 || table.reDefinitions[i].line < 0) {
-                                   table.reDefinitions.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                     }
-                     for (let i = 0; i < table.possibleRefs.length; i++) {
-                            if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < deleteEndLine) {
-                                   table.possibleRefs.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && table.possibleRefs[i].line >= startLine) {
-                                   table.possibleRefs[i].line += document.lineCount - table.lineCount
-                            }
-                            if (table.possibleRefs[i].line > document.lineCount - 1 || table.possibleRefs[i].line < 0) {
-                                   table.possibleRefs.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                     }
-                     for (let i = 0; i < table.includeFileLines.length; i++) {
-                            let line = table.includeFileLines[i]
-                            if (line >= startLine && line < deleteEndLine) {
-                                   table.includeFileLines.splice(i, 1)
-                                   table.includes.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && line >= startLine) {
-                                   table.includeFileLines[i] += document.lineCount - table.lineCount
-                            }
-                            if (line > document.lineCount - 1 || line < 0) {
-                                   table.includeFileLines.splice(i, 1)
-                                   table.includes.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                     }
-                     const diagnosticsArray = table.diagnosticCollection.array
-                     for (let i = 0; i < diagnosticsArray.length; i++) {
-                            let range = diagnosticsArray[i].range
-                            let diagLine = range.start.line
-                            if (diagLine >= startLine && diagLine < deleteEndLine) {
-                                   diagnosticsArray.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && diagLine > startLine) {
-                                   diagLine += document.lineCount - table.lineCount
-                                   if (diagLine < 0) {
-                                          diagnosticsArray.splice(i, 1)
-                                          i--
-                                          continue
-                                   } else {
-                                          diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
-                                   }
-                            }
-                     }
-                     table.lineCount = document.lineCount
-              } else {
-                     table.lineCount = document.lineCount
-              }
-              this.documents[document.uri.fsPath] = table;
+              const table = new DocumentTable(document.uri)
+              let startLine = 0
+              let endLine = document.lineCount
+              // event stuff
+              this.documents[document.uri.fsPath] = table
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
-                     const line = document.lineAt(lineNumber);
-                     if (line.text.match(/(^\s*$)|(^:.*)/)) {
-                            continue;
+                     const line = document.lineAt(lineNumber)
+                     if (line.text.match(/^\s*$/)) {
+                            continue
                      }
                      const commentLineMatch = commentLineRegex.exec(line.text);
                      if (commentLineMatch) {
                             continue;
                      }
-                     const includeLineMatch = includeLineRegex.exec(line.text);
-                     const labelMatch = labelDefinitionRegex.exec(line.text);
+                     const includeLineMatch = includeLineRegex.exec(line.text)
+                     const labelMatch = labelDefinitionRegex.exec(line.text)
+                     const equateMatch = equateRegex.exec(line.text)
                      let nonCommentMatch = line.text.match(nonCommentRegex)
                      nonCommentMatch = nonCommentMatch[0].replace(/(\".+\")|(\'.+\')/g, "")
                      const wordmatch = nonCommentMatch.match(wordregex);
-                     if (!line.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
+                     if (includeLineMatch) {
+                            const fileName = includeLineMatch[2]
+                            const includeLineIndex = table.includeFileLines.indexOf(lineNumber)
+                            if (includeLineIndex != -1) {
+                                   table.includeFileLines.splice(includeLineIndex, 1)
+                                   table.includes.splice(includeLineIndex, 1)
+                            }
+                            const fsRelativeDir = path.dirname(document.uri.fsPath);
+                            const fsPath = this._resolveFilename(fileName, fsRelativeDir); // this also documents any included files
+                            if (fsPath === "") {
+                                   continue
+                            }
+                            table.includes.push(fsPath);
+                            table.includeFileLines.push(lineNumber)
+                            continue
+                     } else if (equateMatch) {
+                            let char = 0
+                            let startChar = 0
+                            for (let index = 1; index < wordmatch.length; ++index) {
+                                   if (!wordmatch[index].match(nonRegRegex)) {
+                                          if (index == 1 && wordmatch[index].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
+                                                 continue
+                                          }
+                                          startChar = nonCommentMatch.indexOf(wordmatch[index], char);
+                                          const endChar = startChar + wordmatch[index].length
+                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri.fsPath)
+                                          table.possibleRefs.push(ref)
+                                   }
+                                   char = startChar + wordmatch[index].length;
+                            }
+                            const kind = vscode.SymbolKind.Variable;
+                            const name = equateMatch[0]
+                            const documentation = this.getDocumentation(document, lineNumber, kind);
+                            const symbol = new SymbolDescriptor(lineNumber, kind, documentation, document.uri.fsPath, name);
+                            if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
+                                   table.reDefinitions.push(symbol)
+                            } else {
+                                   table.symbolDeclarations[name] = symbol
+                            }
+                            continue
+                     } else if (labelMatch) {
+                            let char = 0
+                            let startChar = 0
+                            for (let index = 2; index < wordmatch.length; ++index) {
+                                   if (!wordmatch[index].match(nonRegRegex)) {
+                                          if (index == 1 && wordmatch[index].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
+                                                 continue
+                                          }
+                                          startChar = nonCommentMatch.indexOf(wordmatch[index], char);
+                                          const endChar = startChar + wordmatch[index].length
+                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri.fsPath)
+                                          table.possibleRefs.push(ref)
+                                   }
+                                   char = startChar + wordmatch[index].length;
+                            }
+                            const declaration = labelMatch[0];
+                            if (declaration.match(/^\s*\.?(list|nolist|end)/)) { // these are directives, so they can't be labels
+                                   continue
+                            }
+                            let kind = undefined;
+                            if (declaration.indexOf(":") != -1) {
+                                   kind = vscode.SymbolKind.Method;
+                            }
+                            const name = declaration.replace(/:/g, "");
+                            let documentation = this.getDocumentation(document, lineNumber, kind);
+                            const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
+                            if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
+                                   table.reDefinitions.push(symbol)
+                            } else {
+                                   table.symbolDeclarations[name] = symbol
+                            }
+                            continue
+                     }
+                     if (!line.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i)) {
                             let char = 0
                             let startChar = 0
                             for (let index = 1; index < wordmatch.length; ++index) {
@@ -225,47 +184,221 @@ class symbolDocumenter {
                                    char = startChar + wordmatch[index].length;
                             }
                      }
-                     if (includeLineMatch) {
-                            const filename = includeLineMatch[FILE_NAME];
-                            let includeLineIndex = table.includeFileLines.indexOf(lineNumber)
-                            if (includeLineIndex != -1) {
-                                   table.includeFileLines.splice(includeLineIndex, 1)
-                                   table.includes.splice(includeLineIndex, 1)
-                            }
-                            const fsRelativeDir = path.dirname(document.uri.fsPath);
-                            const filePath = this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
-                            if (filePath === "") {
-                                   continue
-                            }
-                            const includeUri = vscode.Uri.file(filePath);
-                            if (table.includes.indexOf(includeUri.fsPath) == -1) {
-                                   table.includes.push(includeUri.fsPath);
-                                   table.includeFileLines.push(lineNumber)
-                            }
-                     } else if (labelMatch) {
-                            const declaration = labelMatch[0];
-                            if (declaration.match(/^\s*\.?(list|nolist|end)/)) { // these are directives, so they can't be labels
-                                   continue
-                            }
-                            let kind = undefined;
-                            if (declaration.indexOf(":") != -1) {
-                                   kind = vscode.SymbolKind.Method;
-                            } else if (equateRegex.test(line.text)) {
-                                   kind = vscode.SymbolKind.Variable
-                            }
-                            const name = declaration.replace(/:/g, "");
-                            let documentation = this.getDocumentation(document, lineNumber, kind);
-                            const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
-                            if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
-                                   table.reDefinitions.push(symbol)
-                                   continue
-                            }
-                            table.symbolDeclarations[name] = symbol
-                     }
               }
               if (document.fileName.match(/.+\.inc/i)) {
                      table.possibleRefs = []
               }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              // if (!event) {
+              //        this.readTableFromFile(document.uri.fsPath)
+              // }
+              // if (event && event.contentChanges.length == 0) {
+              //        return
+              // }
+              // if (event && event.contentChanges.length > 1) {
+              //        for (let i = 1; i < event.contentChanges.length; i++) {
+              //               const pseudoEvent = {}
+              //               pseudoEvent.contentChanges = []
+              //               pseudoEvent.contentChanges.push(event.contentChanges[i])
+              //               this.declareSymbols(document, pseudoEvent)
+              //        }
+              // }
+              // let table = new DocumentTable(document.uri)
+              // let startLine = 0;
+              // let endLine = document.lineCount;
+              // if (event && event.contentChanges.length > 0) {
+              //        table = this.documents[document.uri.fsPath];
+              //        startLine = event.contentChanges[0].range.start.line
+              //        endLine = event.contentChanges[0].range.end.line + 1
+              //        const deleteEndLine = endLine
+              //        const newLinematch = event.contentChanges[0].text.match(/\n/g)
+              //        if (newLinematch) {
+              //               endLine += newLinematch.length
+              //        } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
+              //               endLine = startLine + 1
+              //        }
+              //        while (endLine < document.lineCount && commentLineRegex.exec(document.lineAt(endLine).text)) {
+              //               endLine++
+              //        }
+              //        if (endLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(endLine).text)) {
+              //               let text = document.lineAt(endLine).text.replace(/:/g, "")
+              //               text = (text.match(/[\.\w+]+/))[0]
+              //               let symbol = this.checkSymbol(text, document.uri, table.symbolDeclarations)
+              //               symbol.documentation = this.getDocumentation(document, endLine, symbol.kind)
+              //        }
+              //        const lineDiff = table.lineCount != document.lineCount
+              //        for (var symName in table.symbolDeclarations) {
+              //               const symLine = table.symbolDeclarations[symName].line
+              //               if (symLine >= startLine && symLine < deleteEndLine) {
+              //                      delete table.symbolDeclarations[symName];
+              //                      continue
+              //               }
+              //               if (lineDiff && table.symbolDeclarations[symName].line >= startLine) {
+              //                      table.symbolDeclarations[symName].line += document.lineCount - table.lineCount
+              //               }
+              //        }
+              //        for (let i = 0; i < table.reDefinitions.length; i++) {
+              //               if (table.reDefinitions[i].line >= startLine && table.reDefinitions[i].line < deleteEndLine) {
+              //                      table.reDefinitions.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //               if (lineDiff && table.reDefinitions[i].line >= startLine) {
+              //                      table.reDefinitions[i].line += document.lineCount - table.lineCount
+              //               }
+              //               if (table.reDefinitions[i].line > document.lineCount - 1 || table.reDefinitions[i].line < 0) {
+              //                      table.reDefinitions.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //        }
+              //        for (let i = 0; i < table.possibleRefs.length; i++) {
+              //               if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < deleteEndLine) {
+              //                      table.possibleRefs.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //               if (lineDiff && table.possibleRefs[i].line >= startLine) {
+              //                      table.possibleRefs[i].line += document.lineCount - table.lineCount
+              //               }
+              //               if (table.possibleRefs[i].line > document.lineCount - 1 || table.possibleRefs[i].line < 0) {
+              //                      table.possibleRefs.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //        }
+              //        for (let i = 0; i < table.includeFileLines.length; i++) {
+              //               let line = table.includeFileLines[i]
+              //               if (line >= startLine && line < deleteEndLine) {
+              //                      table.includeFileLines.splice(i, 1)
+              //                      table.includes.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //               if (lineDiff && line >= startLine) {
+              //                      table.includeFileLines[i] += document.lineCount - table.lineCount
+              //               }
+              //               if (line > document.lineCount - 1 || line < 0) {
+              //                      table.includeFileLines.splice(i, 1)
+              //                      table.includes.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //        }
+              //        const diagnosticsArray = table.diagnosticCollection.array
+              //        for (let i = 0; i < diagnosticsArray.length; i++) {
+              //               let range = diagnosticsArray[i].range
+              //               let diagLine = range.start.line
+              //               if (diagLine >= startLine && diagLine < deleteEndLine) {
+              //                      diagnosticsArray.splice(i, 1)
+              //                      i--
+              //                      continue
+              //               }
+              //               if (lineDiff && diagLine > startLine) {
+              //                      diagLine += document.lineCount - table.lineCount
+              //                      if (diagLine < 0) {
+              //                             diagnosticsArray.splice(i, 1)
+              //                             i--
+              //                             continue
+              //                      } else {
+              //                             diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
+              //                      }
+              //               }
+              //        }
+              //        table.lineCount = document.lineCount
+              // } else {
+              //        table.lineCount = document.lineCount
+              // }
+              // this.documents[document.uri.fsPath] = table;
+              // for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
+              //        const line = document.lineAt(lineNumber);
+              //        if (line.text.match(/(^\s*$)|(^:.*)/)) {
+              //               continue;
+              //        }
+              //        const commentLineMatch = commentLineRegex.exec(line.text);
+              //        if (commentLineMatch) {
+              //               continue;
+              //        }
+              //        const includeLineMatch = includeLineRegex.exec(line.text);
+              //        const labelMatch = labelDefinitionRegex.exec(line.text);
+              //        let nonCommentMatch = line.text.match(nonCommentRegex)
+              //        nonCommentMatch = nonCommentMatch[0].replace(/(\".+\")|(\'.+\')/g, "")
+              //        const wordmatch = nonCommentMatch.match(wordregex);
+              //        if (!line.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
+              //               let char = 0
+              //               let startChar = 0
+              //               for (let index = 1; index < wordmatch.length; ++index) {
+              //                      if (!wordmatch[index].match(nonRegRegex)) {
+              //                             if (index == 1 && wordmatch[index].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
+              //                                    continue
+              //                             }
+              //                             startChar = nonCommentMatch.indexOf(wordmatch[index], char);
+              //                             const endChar = startChar + wordmatch[index].length
+              //                             const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri.fsPath)
+              //                             table.possibleRefs.push(ref)
+              //                      }
+              //                      char = startChar + wordmatch[index].length;
+              //               }
+              //        }
+              //        if (includeLineMatch) {
+              //               const filename = includeLineMatch[FILE_NAME];
+              //               let includeLineIndex = table.includeFileLines.indexOf(lineNumber)
+              //               if (includeLineIndex != -1) {
+              //                      table.includeFileLines.splice(includeLineIndex, 1)
+              //                      table.includes.splice(includeLineIndex, 1)
+              //               }
+              //               const fsRelativeDir = path.dirname(document.uri.fsPath);
+              //               const filePath = this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
+              //               if (filePath === "") {
+              //                      continue
+              //               }
+              //               const includeUri = vscode.Uri.file(filePath);
+              //               if (table.includes.indexOf(includeUri.fsPath) == -1) {
+              //                      table.includes.push(includeUri.fsPath);
+              //                      table.includeFileLines.push(lineNumber)
+              //               }
+              //        } else if (labelMatch) {
+              //               const declaration = labelMatch[0];
+              //               if (declaration.match(/^\s*\.?(list|nolist|end)/)) { // these are directives, so they can't be labels
+              //                      continue
+              //               }
+              //               let kind = undefined;
+              //               if (declaration.indexOf(":") != -1) {
+              //                      kind = vscode.SymbolKind.Method;
+              //               } else if (equateRegex.test(line.text)) {
+              //                      kind = vscode.SymbolKind.Variable
+              //               }
+              //               const name = declaration.replace(/:/g, "");
+              //               let documentation = this.getDocumentation(document, lineNumber, kind);
+              //               const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
+              //               if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
+              //                      table.reDefinitions.push(symbol)
+              //                      continue
+              //               }
+              //               table.symbolDeclarations[name] = symbol
+              //        }
+              // }
+              // if (document.fileName.match(/.+\.inc/i)) {
+              //        table.possibleRefs = []
+              // }
        }
        /**
         * 
@@ -328,7 +461,7 @@ class symbolDocumenter {
                      var includePath = includePathConfiguration[i];
                      // If the path is relative, make it absolute starting from workspace root.
                      if (path.isAbsolute(includePath) == false) {
-                            if (vscode.workspace.workspaceFolders !== undefined) {
+                            if (vscode.workspace.workspaceFolders) {
                                    includePath = path.resolve(vscode.workspace.workspaceFolders[0].uri.fsPath, includePath);
                             }
                      }
@@ -337,12 +470,12 @@ class symbolDocumenter {
                      if (fs.existsSync(joined)) {
                             let includeUri = vscode.Uri.file(joined);
                             const table = this.documents[includeUri.fsPath]; // this.files is very picky
-                            if (table == undefined) {
+                            if (!table) {
                                    vscode.workspace.openTextDocument(includeUri).then((document) => {
                                           this.declareSymbols(document);
                                    });
                             }
-                            return joined;
+                            return includeUri.fsPath;
                      }
               }
               // Nothing found, return the empty string.

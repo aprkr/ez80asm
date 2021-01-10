@@ -53,8 +53,8 @@
       }
     },
     {
-      "name": "adc a, r8",
-      "description": "`a = a + r8 + carry`",
+      "name": "adc a, r",
+      "description": "`a = a + r + carry`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -66,8 +66,8 @@
       }
     },
     {
-      "name": "adc hl, r24",
-      "description": "`hl = hl + r24 + carry`",
+      "name": "adc hl, rr",
+      "description": "`hl = hl + rr + carry`",
       "cycles": 2,
       "bytes": 1,
       "flags": {
@@ -144,8 +144,8 @@
       }
     },
     {
-      "name": "add a, r8",
-      "description": "`a = a + r8`",
+      "name": "add a, r",
+      "description": "`a = a + r`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -157,8 +157,8 @@
       }
     },
     {
-      "name": "add hl, r24",
-      "description": "`hl = hl + r24`",
+      "name": "add hl, rr",
+      "description": "`hl = hl + rr`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -183,8 +183,21 @@
       }
     },
     {
-      "name": "add ix/y, rxy",
-      "description": "`ix/y = ix/y + rxy`",
+      "name": "add ix/y, ix/y",
+      "description": "`ix/y = ix/y + ix/y`",
+      "cycles": 2,
+      "bytes": 2,
+      "flags": {
+        "z": "Not affected",
+        "n": "Reset",
+        "h": "Set if carry from bit 11",
+        "c": "Set if carry from bit MSB",
+        "pv": "Not affected"
+      }
+    },
+    {
+      "name": "add ix/y, r16",
+      "description": "`ix/y = ix/y + r16` Note: r16 only refers to BC and DE",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -261,8 +274,8 @@
       }
     },
     {
-      "name": "and a, r8",
-      "description": "`a = a AND r8`",
+      "name": "and a, r",
+      "description": "`a = a AND r`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -300,8 +313,8 @@
       }
     },
     {
-      "name": "bit bit, r8",
-      "description": "`Z = ~r8[bit]`",
+      "name": "bit bit, r",
+      "description": "`Z = ~r[bit]`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -392,12 +405,12 @@
       }
     },
     {
-      "name": "cp a, r8",
-      "description": "`a - r8`",
+      "name": "cp a, r",
+      "description": "`a - r`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
-        "z": "Set if a = r8",
+        "z": "Set if a = r",
         "n": "Set",
         "h": "Set if borrow from bit 4",
         "c": "Set if borrow",
@@ -535,8 +548,8 @@
       }
     },
     {
-      "name": "dec r8",
-      "description": "`r8 = r8 - 1`",
+      "name": "dec r",
+      "description": "`r = r - 1`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -548,8 +561,8 @@
       }
     },
     {
-      "name": "dec r24",
-      "description": "`r24 = r24 - 1`",
+      "name": "dec rr",
+      "description": "`rr = rr - 1`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -717,8 +730,8 @@
       }
     },
     {
-      "name": "in r8, (bc)",
-      "description": "`r8 = ({uu, b, c})`",
+      "name": "in r, (bc)",
+      "description": "`r = ({uu, b, c})`",
       "cycles": 3,
       "bytes": 2,
       "flags": {
@@ -730,8 +743,8 @@
       }
     },
     {
-      "name": "in0 r8, (n)",
-      "description": "`r8 = ({uu, 0, n})`",
+      "name": "in0 r, (n)",
+      "description": "`r = ({uu, 0, n})`",
       "cycles": 4,
       "bytes": 3,
       "flags": {
@@ -795,8 +808,8 @@
       }
     },
     {
-      "name": "inc r8",
-      "description": "`r8 = r8 + 1`",
+      "name": "inc r",
+      "description": "`r = r + 1`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -808,8 +821,8 @@
       }
     },
     {
-      "name": "inc r24",
-      "description": "`r24 = r24 + 1`",
+      "name": "inc rr",
+      "description": "`rr = rr + 1`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -1147,7 +1160,7 @@
     },
     {
       "name": "ld a, R",
-      "description": "`a = R`",
+      "description": "a = contents of refresh register",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -1159,8 +1172,8 @@
       }
     },
     {
-      "name": "ld a, (r24)",
-      "description": "`a = (r24)`",
+      "name": "ld a, (rr)",
+      "description": "`a = (rr)`",
       "cycles": 2,
       "bytes": 1,
       "flags": {
@@ -1211,8 +1224,8 @@
       }
     },
     {
-      "name": "ld (hl), r8",
-      "description": "`(hl) = r8`",
+      "name": "ld (hl), r",
+      "description": "`(hl) = r`",
       "cycles": 2,
       "bytes": 1,
       "flags": {
@@ -1224,8 +1237,8 @@
       }
     },
     {
-      "name": "ld (hl), r24",
-      "description": "`(hl) = r24`",
+      "name": "ld (hl), rr",
+      "description": "`(hl) = rr`",
       "cycles": 5,
       "bytes": 2,
       "flags": {
@@ -1380,8 +1393,8 @@
       }
     },
     {
-      "name": "ld (ix/y+d), r8",
-      "description": "`(ix/y+d) = r8`",
+      "name": "ld (ix/y+d), r",
+      "description": "`(ix/y+d) = r`",
       "cycles": 4,
       "bytes": 3,
       "flags": {
@@ -1393,8 +1406,8 @@
       }
     },
     {
-      "name": "ld (ix/y+d), r24",
-      "description": "`(ix/y+d) = r24`",
+      "name": "ld (ix/y+d), rr",
+      "description": "`(ix/y+d) = rr`",
       "cycles": 6,
       "bytes": 3,
       "flags": {
@@ -1445,8 +1458,8 @@
       }
     },
     {
-      "name": "ld (mmn), r24",
-      "description": "`(Mmn) = r24`",
+      "name": "ld (mmn), rr",
+      "description": "`(Mmn) = rr`",
       "cycles": 8,
       "bytes": 5,
       "flags": {
@@ -1471,8 +1484,8 @@
       }
     },
     {
-      "name": "ld r, a",
-      "description": "`R = a`",
+      "name": "ld R, a",
+      "description": "contents of refresh register = a",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -1484,8 +1497,8 @@
       }
     },
     {
-      "name": "ld r8, (hl)",
-      "description": "`r8 = (hl)`",
+      "name": "ld r, (hl)",
+      "description": "`r = (hl)`",
       "cycles": 2,
       "bytes": 1,
       "flags": {
@@ -1497,8 +1510,8 @@
       }
     },
     {
-      "name": "ld r8, ir",
-      "description": "`r8 = ir`",
+      "name": "ld r, ir",
+      "description": "`r = ir`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -1510,8 +1523,8 @@
       }
     },
     {
-      "name": "ld r8, (ix/y+d)",
-      "description": "`r8 = (ix/y+d)`",
+      "name": "ld r, (ix/y+d)",
+      "description": "`r = (ix/y+d)`",
       "cycles": 4,
       "bytes": 3,
       "flags": {
@@ -1523,8 +1536,8 @@
       }
     },
     {
-      "name": "ld r8, n",
-      "description": "`r8 = n`",
+      "name": "ld r, n",
+      "description": "`r = n`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -1536,8 +1549,8 @@
       }
     },
     {
-      "name": "ld r8, r8",
-      "description": "`r8 = r8`",
+      "name": "ld r, r",
+      "description": "`r = r`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -1549,8 +1562,8 @@
       }
     },
     {
-      "name": "ld r24, (hl)",
-      "description": "`r24 = (hl)`",
+      "name": "ld rr, (hl)",
+      "description": "`rr = (hl)`",
       "cycles": 5,
       "bytes": 2,
       "flags": {
@@ -1562,8 +1575,8 @@
       }
     },
     {
-      "name": "ld r24, (ix/y+d)",
-      "description": "`r24 = (ix/y6d)`",
+      "name": "ld rr, (ix/y+d)",
+      "description": "`rr = (ix/y6d)`",
       "cycles": 6,
       "bytes": 3,
       "flags": {
@@ -1575,8 +1588,8 @@
       }
     },
     {
-      "name": "ld r24, mmn",
-      "description": "`r24 = Mmn`",
+      "name": "ld rr, mmn",
+      "description": "`rr = Mmn`",
       "cycles": 4,
       "bytes": 4,
       "flags": {
@@ -1588,8 +1601,8 @@
       }
     },
     {
-      "name": "ld r24, (mmn)",
-      "description": "`r24 = (Mmn)`",
+      "name": "ld rr, (mmn)",
+      "description": "`rr = (Mmn)`",
       "cycles": 8,
       "bytes": 5,
       "flags": {
@@ -1601,8 +1614,8 @@
       }
     },
     {
-      "name": "ld (r24), a",
-      "description": "`(r24) = a`",
+      "name": "ld (rr), a",
+      "description": "`(rr) = a`",
       "cycles": 3,
       "bytes": 2,
       "flags": {
@@ -1731,8 +1744,8 @@
       }
     },
     {
-      "name": "lea r24, ix/y+d",
-      "description": "`r24 = ix+d`",
+      "name": "lea rr, ix/y+d",
+      "description": "`rr = ix+d`",
       "cycles": 3,
       "bytes": 3,
       "flags": {
@@ -1744,8 +1757,8 @@
       }
     },
     {
-      "name": "mlt r24",
-      "description": "`r24 = r24[15:8] * r24[7:0]`",
+      "name": "mlt rr",
+      "description": "`rr = rr[15:8] * rr[7:0]`",
       "cycles": 6,
       "bytes": 2,
       "flags": {
@@ -1848,8 +1861,8 @@
       }
     },
     {
-      "name": "or a, r8",
-      "description": "`a = a OR r8`",
+      "name": "or a, r",
+      "description": "`a = a OR r`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -1991,8 +2004,8 @@
       }
     },
     {
-      "name": "out (bc), r8",
-      "description": "`({UU, b, c}) = r8",
+      "name": "out (bc), r",
+      "description": "`({UU, b, c}) = r",
       "cycles": 3,
       "bytes": 2,
       "flags": {
@@ -2017,8 +2030,8 @@
       }
     },
     {
-      "name": "out0 (n), r8",
-      "description": "`({UU, 0, n}) = r8",
+      "name": "out0 (n), r",
+      "description": "`({UU, 0, n}) = r",
       "cycles": 4,
       "bytes": 3,
       "flags": {
@@ -2121,8 +2134,8 @@
       }
     },
     {
-      "name": "pop r24",
-      "description": "Pops top of stack into `r24`",
+      "name": "pop rr",
+      "description": "Pops top of stack into `rr`",
       "cycles": 4,
       "bytes": 1,
       "flags": {
@@ -2160,8 +2173,8 @@
       }
     },
     {
-      "name": "push r24",
-      "description": "Pushes `r24` to top of stack",
+      "name": "push rr",
+      "description": "Pushes `rr` to top of stack",
       "cycles": 4,
       "bytes": 1,
       "flags": {
@@ -2199,8 +2212,8 @@
       }
     },
     {
-      "name": "res bit, r8",
-      "description": "`r8[bit] = 0`",
+      "name": "res bit, r",
+      "description": "`r[bit] = 0`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -2290,7 +2303,7 @@
       }
     },
     {
-      "name": "rl r8",
+      "name": "rl r",
       "description": "rotate left, carry to bit 0, bit 7 to carry",
       "cycles": 2,
       "bytes": 2,
@@ -2342,7 +2355,7 @@
       }
     },
     {
-      "name": "rlc r8",
+      "name": "rlc r",
       "description": "rotate left with carry, bit 7 to carry and bit 0",
       "cycles": 2,
       "bytes": 2,
@@ -2407,7 +2420,7 @@
       }
     },
     {
-      "name": "rr r8",
+      "name": "rr r",
       "description": "rotate right, carry to bit 7, bit 0 to carry",
       "cycles": 2,
       "bytes": 2,
@@ -2459,7 +2472,7 @@
       }
     },
     {
-      "name": "rrc r8",
+      "name": "rrc r",
       "description": "rotate right carry, bit 0 to carry and bit 7",
       "cycles": 2,
       "bytes": 2,
@@ -2576,8 +2589,8 @@
       }
     },
     {
-      "name": "sbc a, r8",
-      "description": "`a = a - r8 - carry`",
+      "name": "sbc a, r",
+      "description": "`a = a - r - carry`",
       "cycles": 1,
       "bytes": 1,
       "flags": {
@@ -2589,8 +2602,8 @@
       }
     },
     {
-      "name": "sbc hl, r24",
-      "description": "`hl = hl - r24 - carry`",
+      "name": "sbc hl, rr",
+      "description": "`hl = hl - rr - carry`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -2654,8 +2667,8 @@
       }
     },
     {
-      "name": "set bit, r8",
-      "description": "`r8[bit] = 1`",
+      "name": "set bit, r",
+      "description": "`r[bit] = 1`",
       "cycles": 2,
       "bytes": 2,
       "flags": {
@@ -2693,7 +2706,7 @@
       }
     },
     {
-      "name": "sla r8",
+      "name": "sla r",
       "description": "Shift left arithmetic, bit 7 to carry, 0 to bit 0",
       "cycles": 2,
       "bytes": 2,
@@ -2745,7 +2758,7 @@
       }
     },
     {
-      "name": "sra r8",
+      "name": "sra r",
       "description": "Shift right arithmetic, bit 7 to bit 7, bit 0 to carry",
       "cycles": 2,
       "bytes": 2,
@@ -2784,7 +2797,7 @@
       }
     },
     {
-      "name": "srl r8",
+      "name": "srl r",
       "description": "Shift right logical, 0 to bit 7, bit 0 to carry",
       "cycles": 2,
       "bytes": 2,
@@ -2862,8 +2875,8 @@
       }
     },
     {
-      "name" : "sub a, r8",
-      "description" : "`a = a - r8`",
+      "name" : "sub a, r",
+      "description" : "`a = a - r`",
       "cycles" : 1,
       "bytes" : 1,
       "flags" : {
@@ -2901,8 +2914,8 @@
       }
     },
     {
-      "name" : "tst a, r8",
-      "description" : "`a AND r8`",
+      "name" : "tst a, r",
+      "description" : "`a AND r`",
       "cycles" : 2,
       "bytes" : 2,
       "flags" : {
@@ -2979,8 +2992,8 @@
       }
     },
     {
-      "name" : "xor a, r8",
-      "description" : "`a = a XOR r8`",
+      "name" : "xor a, r",
+      "description" : "`a = a XOR r`",
       "cycles" : 1,
       "bytes" : 1,
       "flags" : {
