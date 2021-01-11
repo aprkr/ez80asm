@@ -1,11 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
+const imports = require("./imports")
 
 /**
  * Provides reference locations
  */
 class referenceProvider {
+       /**
+        * 
+        * @param {imports.symbolDocumenter} symbolDocumenter 
+        */
        constructor(symbolDocumenter) {
               this.symbolDocumenter = symbolDocumenter
        }
@@ -43,15 +48,18 @@ class referenceProvider {
        findRefs(docPath, searched, output, name) {
               let table = this.symbolDocumenter.documents[docPath]
               searched.push(docPath)
-              for (let i = 0; i < table.possibleRefs.length; i++) {
+              const refs = this.symbolDocumenter.getDocRefs(table)
+              for (let i = 0; i < refs.length; i++) {
                      let match = false
                      if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
-                            match = table.possibleRefs[i].text.toLowerCase() === name.toLowerCase()
+                            match = refs[i].name.toLowerCase() === name.toLowerCase()
                      } else {
-                            match = table.possibleRefs[i].text === name
+                            match = refs[i].name === name
                      }
                      if (match) {
-                            output.push(table.possibleRefs[i].location)
+                            const uri = vscode.Uri.file(refs[i].fsPath)
+                            const location = new vscode.Location(uri, refs[i].range)
+                            output.push(location)
                      }
               }
               for (let i = 0; i < table.includes.length; i++) { // search included files

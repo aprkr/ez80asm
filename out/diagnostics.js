@@ -45,66 +45,60 @@ class diagnosticProvider {
               if (!table) {
                      table = this.symbolDocumenter.documents[document.uri.fsPath]
               }
-              let collection = table.diagnosticCollection
-              collection.clear()
-              let array = []
+              const collection = table.collection
               const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
-              for (let i = 0; i < table.possibleRefs.length; i++) {
-                     if (!this.symbolDocumenter.checkSymbol(table.possibleRefs[i].text, document.uri, symbols)) {
-                            array.push(new vscode.Diagnostic(table.possibleRefs[i].range, "Bad symbol"));
+              const refs = this.symbolDocumenter.getDocRefs(table)
+              let previousLine = -1
+
+              for (let i = 0; i < refs.length; i++) {
+                     const diag = new vscode.Diagnostic(refs[i].range, "Symbol not found")
+                     const curDiags = table.lines[refs[i].line].diagnostics
+                     if (refs[i].line != previousLine) {
+                            curDiags.length = 0
+                            previousLine = refs[i].line
+                     }
+                     if (!this.symbolDocumenter.checkSymbol(refs[i].name, document.uri, symbols)) {
+                            curDiags.push(diag)
                      }
               }
-              collection.symarray = array
               if (vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
-                     collection.set(document.uri, table.fullArray)
+                     collection.set(document.uri, this.getDocDiags(table))
               }
+       }
+       getLinesWithRefs(table) {
+              const lines = table.lines.filter((line, index) => {
+                     line.lineNumber = index
+                     return line.refs && line.refs.length > 0
+              })
+              return lines
        }
        /**
         * @param {vscode.TextDocument} document 
         * @param {vscode.TextDocumentChangeEvent} event 
         */
        getDiagnostics(document, event) {
+              const table = this.symbolDocumenter.documents[document.uri.fsPath]
               if (document.fileName.match(/^.+\.inc$/)) {
                      return
               }
               if (event && event.contentChanges.length > 1) {
-                     for (let i = 1; i < event.contentChanges.length; i++) {
-                            const pseudoEvent = {}
-                            pseudoEvent.contentChanges = []
-                            pseudoEvent.contentChanges.push(event.contentChanges[i])
-                            this.getDiagnostics(document, pseudoEvent)
-                     }
-              }
-              const table = this.symbolDocumenter.documents[document.uri.fsPath]
-              let collection = table.diagnosticCollection
-              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
-              collection.redefArray = []
-              for (let i = 0; i < table.reDefinitions.length; i++) {
-                     const definition = this.symbolDocumenter.checkSymbol(table.reDefinitions[i].name, table.reDefinitions[i].uri, symbols)
-                     if (!definition) {
-                            table.symbolDeclarations[table.reDefinitions[i].name] = table.reDefinitions[i]
-                            table.reDefinitions.splice(i, 1)
-                            i--
-                            continue
-                     } else if (definition.line > table.reDefinitions[i].line) {
-                            table.symbolDeclarations[table.reDefinitions[i].name] = table.reDefinitions[i]
-                            table.reDefinitions[i] = definition
+                     if (event.contentChanges.length > 6) {
+                            // const idk = table.collection.get(document.uri)
+                            // table.collection.dispose()
+                            // table.collection = vscode.languages.createDiagnosticCollection()
+                            this.getDiagnostics(document)
                      } else {
-                            const position = new vscode.Position(table.reDefinitions[i].line, 0)
-                            let range = document.getWordRangeAtPosition(position, /[\w\.]+/g)
-                            let text = document.getText(range)
-                            if (text !== table.reDefinitions[i].name) {
-                                   table.reDefinitions.splice(i, 1)
-                                   i--
-                                   continue
+                            for (let i = 0; i < event.contentChanges.length; i++) {
+                                   const pseudoEvent = {}
+                                   pseudoEvent.contentChanges = []
+                                   pseudoEvent.contentChanges.push(event.contentChanges[i])
+                                   this.getDiagnostics(document, pseudoEvent)
                             }
                      }
-                     const range = new vscode.Range(table.reDefinitions[i].line, 0, table.reDefinitions[i].line, table.reDefinitions[i].name.length)
-                     let diag = new vscode.Diagnostic(range, "Redefinition of " + table.reDefinitions[i].name.toUpperCase(), vscode.DiagnosticSeverity.Warning)
-                     collection.redefArray.push(diag)
+                     return
               }
-              this.scanRefs(document, table)
-              let diagnosticsArray = collection.array
+              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
+              const collection = table.collection
               let startLine = 0
               let endLine = document.lineCount
               if (event) {
@@ -113,23 +107,48 @@ class diagnosticProvider {
                      const newLinematch = event.contentChanges[0].text.match(/\n/g)
                      if (newLinematch) {
                             endLine += newLinematch.length
-                     } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
+                     } else if (table.lines.length == document.lineCount && event.contentChanges[0].text === "") { // that's iffy
                             endLine = startLine + 1
                      }
               }
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
                      const line = document.lineAt(lineNumber)
-                     let diags = this.getLineDiagnostics(line.text, lineNumber, symbols, document, collection.symarray)
+                     let diags = this.getLineDiagnostics(line.text, lineNumber, symbols, document)
                      if (diags && diags.length > 0) {
                             for (let i = 0; i < diags.length; i++) {
-                                   diagnosticsArray.push(diags[i])
+                                   table.lines[lineNumber].diagnostics.push(diags[i])
                             }
+                     } else {
+                            table.lines[lineNumber].diagnostics = []
                      }
               }
-              collection.array = diagnosticsArray
+              // this.scanRefs(document, table)
               if (vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
-                     collection.set(document.uri, table.fullArray)
+                     collection.set(document.uri, this.getDocDiags(table))
               }
+       }
+       /**
+        * 
+        * @param {} table 
+        * @param {[]} output 
+        */
+       getDocDiags(table, output) {
+              if (!output) {
+                     output = []
+              }
+              const lines = table.lines.filter((line, index) => {
+                     line.lineNumber = index
+                     return line.diagnostics.length > 0
+              })
+              for (let i = 0; i < lines.length; i++) {
+                     for (let j = 0; j < lines[i].diagnostics.length; j++) {
+                            const diagnostic = lines[i].diagnostics[j]
+                            diagnostic.line = lines[i].lineNumber
+                            diagnostic.range = new vscode.Range(diagnostic.line, diagnostic.range.start.character, diagnostic.line, diagnostic.range.end.character)
+                            output.push(diagnostic)
+                     }
+              }
+              return output
        }
        /**
         * 
@@ -137,9 +156,8 @@ class diagnosticProvider {
         * @param {Number} lineNumber 
         * @param {{}} symbols 
         * @param {vscode.TextDocument} document 
-        * @param {[]} symarray 
         */
-       getLineDiagnostics(text, lineNumber, symbols, document, symarray) {
+       getLineDiagnostics(text, lineNumber, symbols, document) {
               let diagnosticsArray = []
               if (text === "") {
                      return;
@@ -227,11 +245,11 @@ class diagnosticProvider {
                                    if (invalid) {
                                           const endChar = textLength;
                                           const range = new vscode.Range(lineNumber, 0, lineNumber, endChar)
-                                          for (let i = 0; i < symarray.length; i++) {
-                                                 if (symarray[i].range.intersection(range)) {
-                                                        return diagnosticsArray
-                                                 }
-                                          }
+                                          // for (let i = 0; i < symarray.length; i++) {
+                                          //        if (symarray[i].range.intersection(range)) {
+                                          //               return diagnosticsArray
+                                          //        }
+                                          // }
                                           diagnosticsArray.push(new vscode.Diagnostic(range, "Bad operands"));
                                    }
                             }

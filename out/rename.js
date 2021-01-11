@@ -2,11 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const symbolDocumenter = require("./symbolDocumenter")
+const imports = require("./imports")
 
 /**
  * Allows you to rename symbols
  */
 class renameProvider {
+       /**
+        * 
+        * @param {imports.symbolDocumenter} symbolDocumenter 
+        */
        constructor(symbolDocumenter) {
               this.symbolDocumenter = symbolDocumenter
        }
