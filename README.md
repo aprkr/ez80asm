@@ -42,3 +42,7 @@ The EZ80 Assembly extension for Visual Studio provides language support for EZ80
 ### License
 This project is subject to [these terms](https://github.com/LiberalEater/ez80asm/blob/main/LICENSE.txt).
 
+### Known Bugs
+* Undoing (Ctrl + z) a rename will cause an error if the symbol is in multiple files, to fix, just type anything on the line with the error and save
+* Sometimes semantic highlighting can be messed up, to fix, press (Ctrl + a) and (Ctrl + /) x 2 (it basically rescans the document)
+

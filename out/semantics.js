@@ -27,9 +27,9 @@ class semanticsProvider {
                      return
               }
               const legend = this.legend
-              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
+              const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
               const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-              const refs = this.symbolDocumenter.getDocRefs(table)
+              const refs = this.symbolDocumenter.getAllinTable(table, "refs", [])
               for (let i = 0; i < refs.length; i++) {
                      const symbol = this.symbolDocumenter.checkSymbol(refs[i].name, document.uri, symbols)
                      if (symbol) {

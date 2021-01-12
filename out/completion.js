@@ -4,6 +4,7 @@ const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
 const regRegex = /\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b/i
+const registers = regRegex.source.match(/(?<=\(|\|)[\w\']+(?=\||\))+/g) 
 const reg8 = /\br\b/
 const multireg = /\brr\b/
 /**
@@ -187,13 +188,12 @@ class ASMCompletionProposer {
     provideCompletionItems(document, position, token, context) {
         let output = [];
         const line = document.lineAt(position.line)
-        const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
-        const range = document.getWordRangeAtPosition(position, regRegex)
+        const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
         if (line.text.match(/^\s+\w*$/) && vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
             this.instructionItems.forEach((item) => {
                 output.push(item);
             })
-        } else {
+        } else if (line.text.match(/^\s+/)) {
             for (const name in symbols) {
                 if (symbols.hasOwnProperty(name)) {
                     const symbol = symbols[name];
@@ -211,8 +211,8 @@ class ASMCompletionProposer {
                     output.push(item);
                 }
             }
-            if (range) {
-                output.push(new vscode.CompletionItem(document.getText(range), vscode.CompletionItemKind.Keyword))
+            for (let i = 0; i < registers.length; i++) {
+                output.push(new vscode.CompletionItem(registers[i], vscode.CompletionItemKind.Keyword))
             }
         }
         return output;

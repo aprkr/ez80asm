@@ -20,7 +20,6 @@ class main {
                      this.symbolDocumenter.declareSymbols(document, event)
                      if (!event) {
                             setTimeout(() => { this.diagnosticProvider.getDiagnostics(document) }, 2000)
-                            // this.diagnosticProvider.getDiagnostics(document)
                      } else {
                             this.diagnosticProvider.getDiagnostics(document, event)
                      }
@@ -49,13 +48,13 @@ class main {
               const docOpened = (document) => { // if a file was just opened
                      if (!this.symbolDocumenter.documents[document.uri.fsPath] && document.fileName.match(/(ez80|inc)$/i)) {
                             scanDoc(document)
-                            setTimeout(() => { diagnoseOtherDocs() }, 1000)
+                            setTimeout(() => { checkAllRefs() }, 1000)
                      }
                      if (this.symbolDocumenter.documents[document.uri.fsPath]) {
                             this.symbolDocumenter.writeTableToFile(document)
                      }
               }
-              const diagnoseOtherDocs = () => { // check references
+              const checkAllRefs = () => { // check references
                      for (let i = 0; i < vscode.workspace.textDocuments.length; i++) {
                             const doc = vscode.workspace.textDocuments[i]
                             if (this.symbolDocumenter.documents[doc.uri.fsPath] && !doc.fileName.match(/(inc)$/i)) {
@@ -82,11 +81,11 @@ class main {
                      }
                      if (changeLine != -1) {     // a sloppy(ish) way of reducing the number of scans to lessen CPU load
                             scanTimeout = setTimeout(() => { scanDoc(event.document, event) }, 700)
-                            otherDocTimeout = setTimeout(() => { diagnoseOtherDocs() }, 701)
+                            otherDocTimeout = setTimeout(() => { checkAllRefs() }, 800)
                             return
                      } else {
                             scanDoc(event.document, event)
-                            otherDocTimeout = setTimeout(() => { diagnoseOtherDocs() }, 1001)
+                            otherDocTimeout = setTimeout(() => { checkAllRefs() }, 1001)
                      }
               })
               vscode.workspace.onDidRenameFiles((event) => {
@@ -124,7 +123,8 @@ class main {
               })
               if (vscode.window.activeTextEditor && !this.symbolDocumenter.documents[vscode.window.activeTextEditor.document.uri.fsPath]) { // if there is an currently open file
                      scanDoc(vscode.window.activeTextEditor.document)
-                     setTimeout(() => { diagnoseOtherDocs() }, 1500)
+                     this.symbolDocumenter.writeTableToFile(vscode.window.activeTextEditor.document)
+                     setTimeout(() => { checkAllRefs() }, 1500)
               }
        }
 }

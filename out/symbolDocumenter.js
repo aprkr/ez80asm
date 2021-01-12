@@ -3,12 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
-const { start } = require("repl");
 const commentLineRegex = /^\s*;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
-const FILE_NAME = 2;
-const labelDefinitionRegex = /^[\w\.]+:{0,2}/i;
+// const FILE_NAME = 2;
+const labelDefinitionRegex = /^(?!\.?assume\b|\.?org\b|\.?db\b|\.?dw\b|\.?dl\b|\.?list\b|\.?nolist\b|\.?end\b)[\w\.]+:{0,2}/i;
 // const equateRegexold = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|set)[\W]+.*$/i;
 const equateRegex = /^[\w\.]+(?=[\s\.]+equ\s+.+$)/i
 const nonCommentRegex = /^([^;]+[^\,\s;])/g
@@ -30,12 +29,6 @@ class possibleRef {
               this.name = name
               this.fsPath = fsPath
        }
-       get location() {
-              return new vscode.Location(this.uri, this.range)
-       }
-       get uri() {
-              return vscode.Uri.file(this.fsPath)
-       }
 }
 class DocumentTable {
        constructor(uri) {
@@ -53,6 +46,12 @@ class symbolDocumenter {
               this.documents = {}
               this.extensionPath = (vscode.extensions.getExtension("alex-parker.ez80-asm")).extensionPath;
               this.cacheFolder = path.join(this.extensionPath, "/caches")
+              // this.symbolRenameEmitter = new vscode.EventEmitter()
+              // this.renameTimeout = 0
+              // this.onDidRenameSymbol = (event) => {
+              //        this.renameTimeout = setTimeout(() => { this.renameTimeout = 0 }, 50)
+              // };
+              // this.symbolRenameEmitter.event(this.onDidRenameSymbol)
        }
        /**
         * @param {vscode.TextDocument} document 
@@ -63,16 +62,16 @@ class symbolDocumenter {
               let startLine = 0
               let endLine = document.lineCount
               if (event && event.contentChanges.length > 1) {
-                     if (event.contentChanges.length > 6) {
-                            this.documents[document.uri.fsPath].collection.dispose()
-                            this.declareSymbols(document)
-                     } else {
-                            for (let i = 0; i < event.contentChanges.length; i++) {
-                                   const pseudoEvent = {}
-                                   pseudoEvent.contentChanges = []
-                                   pseudoEvent.contentChanges.push(event.contentChanges[i])
-                                   this.declareSymbols(document, pseudoEvent)
+                     for (let i = 0; i < event.contentChanges.length; i++) {
+                            while (i < event.contentChanges.length - 1 && (event.contentChanges[i].range.start.line == event.contentChanges[i].range.end.line
+                                   && event.contentChanges[i + 1].range.start.line == event.contentChanges[i + 1].range.end.line
+                                   && event.contentChanges[i].range.start.line == event.contentChanges[i + 1].range.start.line)) {
+                                   i++
                             }
+                            const pseudoEvent = {}
+                            pseudoEvent.contentChanges = []
+                            pseudoEvent.contentChanges.push(event.contentChanges[i])
+                            this.declareSymbols(document, pseudoEvent)
                      }
                      return
               }
@@ -96,7 +95,7 @@ class symbolDocumenter {
                      if (docLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(docLine).text)) {
                             let text = document.lineAt(docLine).text.replace(/:/g, "")
                             text = (text.match(/[\.\w+]+/))[0]
-                            let symbol = this.checkSymbol(text, document.uri, this.getDocSymbols(table))
+                            let symbol = this.checkSymbol(text, document.uri, this.getAllinTable(table, "symbol", {}))
                             symbol.documentation = this.getDocumentation(document, docLine, symbol.kind)
                      }
               } else if (event && event.contentChanges.length == 0) {
@@ -153,17 +152,10 @@ class symbolDocumenter {
                             const name = equateMatch[0]
                             const documentation = this.getDocumentation(document, lineNumber, kind);
                             const symbol = new SymbolDescriptor(kind, documentation, document.uri.fsPath, name);
-                            // if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
-                            //        line.symbol = symbol
-                            // } else {
                             line.symbol = symbol
-                            // }
                      } else if (labelMatch) {
                             firstWord = 1
                             const declaration = labelMatch[0];
-                            if (declaration.match(/^\s*\.?(list|nolist|end)/)) { // these are directives, so they can't be labels
-                                   continue
-                            }
                             let kind = undefined;
                             if (declaration.indexOf(":") != -1) {
                                    kind = vscode.SymbolKind.Method;
@@ -171,11 +163,7 @@ class symbolDocumenter {
                             const name = declaration.replace(/:/g, "");
                             let documentation = this.getDocumentation(document, lineNumber, kind);
                             const symbol = new SymbolDescriptor(kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
-                            // if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
-                            //        line.symbol = symbol
-                            // } else {
                             line.symbol = symbol
-                            // }
                      }
                      if (!docLine.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i)) {
                             let char = 0
@@ -239,7 +227,7 @@ class symbolDocumenter {
               let simpleJoin = path.resolve(fsRelativeDir, filename);
               if (fs.existsSync(simpleJoin)) {
                      let includeUri = vscode.Uri.file(simpleJoin);
-                     const table = this.documents[includeUri.fsPath]; // this.files is very picky
+                     const table = this.documents[includeUri.fsPath];
                      if (table == undefined) {
                             vscode.workspace.openTextDocument(includeUri).then((document) => {
                                    this.declareSymbols(document);
@@ -278,7 +266,6 @@ class symbolDocumenter {
               return "";
        }
        /**
-        * 
         * @param {vscode.TextDocument} document 
         */
        writeTableToFile(document) {
@@ -304,95 +291,97 @@ class symbolDocumenter {
               }
               const fileStats = fs.statSync(fsPath)
               const table = JSON.parse(fs.readFileSync(cachePath, "utf8"));
-              // for (let i = 0; i < table.possibleRefs.length; i++) {
-              //        const ref = table.possibleRefs[i]
-              //        table.possibleRefs[i] = new possibleRef(ref.line, ref.startChar, ref.endChar, ref.text, table.fsPath)
-              // }
               if (table && table.fsPath == fsPath && table.lastModified == fileStats.mtimeMs) {
                      this.documents[fsPath] = table
                      table.collection = vscode.languages.createDiagnosticCollection();
                      for (let i = 0; i < table.includes.length; i++) {
                             this.readTableFromFile(table.includes[i])
-                     }
-              }
-       }
-       /**
-        * 
-        * @param {DocumentTable} table 
-        * @param {{}} output 
-        */
-       getDocSymbols(table, output) {
-              if (!output) {
-                     output = {}
-              }
-              const lines = table.lines.filter((line, index) => {
-                     line.lineNumber = index
-                     return line.symbol
-              })
-              for (let i = 0; i < lines.length; i++) {
-                     const symbol = lines[i].symbol
-                     symbol.line = lines[i].lineNumber
-                     output[symbol.name] = symbol
-              }
-              return output
-       }
-       getDocRefs(table, output) {
-              if (!output) {
-                     output = []
-              }
-              const lines = table.lines.filter((line, index) => {
-                     line.lineNumber = index
-                     return line.refs
-              })
-              for (let i = 0; i < lines.length; i++) {
-                     for (let j = 0; j < lines[i].refs.length; j++) {
-                            const ref = lines[i].refs[j]
-                            ref.line = lines[i].lineNumber
-                            if (!ref.range) {
-                                   Object.defineProperty(ref, 'range', {
-                                          get: function () { return new vscode.Range(this.line, this.startChar, this.line, this.endChar) }
+                            if (!this.documents[table.includes[i]]) {
+                                   const fileURI = vscode.Uri.file(table.includes[i])
+                                   vscode.workspace.openTextDocument(fileURI).then((document) => {
+                                          if (!this.documents[document.uri.fsPath]) {
+                                                 scanDoc(document);
+                                          }
                                    });
                             }
-                            output.push(ref)
                      }
               }
-              return output
        }
        /**
-        * 
-        * @param {vscode.Uri} uri 
+        * Output has to be passed
+        * @param {String} fsPath 
+        * @param {String} type 
+        * @param {[]|{}} output 
         * @param {[]} searched 
-        * @param {{}} output 
         */
-       getAvailableSymbols(uri, searched, output) {
-              if (!output || !searched) {
-                     searched = []
-                     output = {}
+       getAllof(fsPath, type, output, searched) {
+              if (!output) {
+                     console.log("Output not declared")
               }
-              let table = this.documents[uri.fsPath]
-              searched.push(uri.fsPath)
-              this.getDocSymbols(table, output)
+              if (!searched) {
+                     searched = []
+              }
+              let table = this.documents[fsPath]
+              searched.push(fsPath)
+              this.getAllinTable(table, type, output)
               for (let i = 0; i < table.includes.length; i++) { // search included files
                      if (searched.indexOf(table.includes[i]) == -1) {
-                            const includeUri = vscode.Uri.file(table.includes[i])
-                            this.getAvailableSymbols(includeUri, searched, output)
+                            this.getAllof(table.includes[i], type, output, searched)
                      }
               }
               for (var docPath in this.documents) { // search files that include this one
                      table = this.documents[docPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            if (table.includes[i] === uri.fsPath && searched.indexOf(docPath) == -1) {
-                                   const docUri = vscode.Uri.file(docPath)
-                                   this.getAvailableSymbols(docUri, searched, output)
+                            if (table.includes[i] === fsPath && searched.indexOf(docPath) == -1) {
+                                   this.getAllof(docPath, type, output, searched)
                             }
                      }
               }
               return output
        }
-
+       /**
+        * Output has to be passed
+        * @param {DocumentTable} table 
+        * @param {String} type 
+        * @param {[]|{}} output 
+        */
+       getAllinTable(table, type, output) {
+              if (output instanceof Array) {
+                     const lines = table.lines.filter((line, index) => {
+                            line.lineNumber = index
+                            return line[type]
+                     })
+                     for (let i = 0; i < lines.length; i++) {
+                            for (let j = 0; j < lines[i][type].length; j++) {
+                                   const itemOfType = lines[i][type][j]
+                                   itemOfType.line = lines[i].lineNumber
+                                   if (!itemOfType.range) {
+                                          Object.defineProperty(itemOfType, 'range', {
+                                                 get: function () { return new vscode.Range(this.line, this.startChar, this.line, this.endChar) }
+                                          });
+                                   }
+                                   output.push(itemOfType)
+                            }
+                     }
+                     return output
+              } else if (output instanceof Object) {
+                     const lines = table.lines.filter((line, index) => {
+                            line.lineNumber = index
+                            return line[type]
+                     })
+                     for (let i = 0; i < lines.length; i++) {
+                            const itemOfType = lines[i][type]
+                            itemOfType.line = lines[i].lineNumber
+                            output[itemOfType.name] = itemOfType
+                     }
+                     return output
+              } else {
+                     console.log("Invalid output")
+              }
+       }
        checkSymbol(name, uri, symbols) {
               if (!symbols) {
-                     symbols = this.getAvailableSymbols(uri)
+                     symbols = this.getAllof(uri.fsPath, "symbol", {})
               }
               if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
                      const symbol = symbols[Object.keys(symbols).find(key => key.toLowerCase() === name.toLowerCase())]
@@ -401,7 +390,6 @@ class symbolDocumenter {
                      return symbols[name]
               }
        }
-
 }
 exports.symbolDocumenter = symbolDocumenter
 exports.SymbolDescriptor = SymbolDescriptor

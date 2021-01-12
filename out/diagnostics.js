@@ -46,8 +46,8 @@ class diagnosticProvider {
                      table = this.symbolDocumenter.documents[document.uri.fsPath]
               }
               const collection = table.collection
-              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
-              const refs = this.symbolDocumenter.getDocRefs(table)
+              const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
+              const refs = this.symbolDocumenter.getAllinTable(table, "refs", [])
               let previousLine = -1
 
               for (let i = 0; i < refs.length; i++) {
@@ -82,22 +82,20 @@ class diagnosticProvider {
                      return
               }
               if (event && event.contentChanges.length > 1) {
-                     if (event.contentChanges.length > 6) {
-                            // const idk = table.collection.get(document.uri)
-                            // table.collection.dispose()
-                            // table.collection = vscode.languages.createDiagnosticCollection()
-                            this.getDiagnostics(document)
-                     } else {
-                            for (let i = 0; i < event.contentChanges.length; i++) {
-                                   const pseudoEvent = {}
-                                   pseudoEvent.contentChanges = []
-                                   pseudoEvent.contentChanges.push(event.contentChanges[i])
-                                   this.getDiagnostics(document, pseudoEvent)
+                     for (let i = 0; i < event.contentChanges.length; i++) {
+                            while (i < event.contentChanges.length - 1 && (event.contentChanges[i].range.start.line == event.contentChanges[i].range.end.line
+                                   && event.contentChanges[i + 1].range.start.line == event.contentChanges[i + 1].range.end.line
+                                   && event.contentChanges[i].range.start.line == event.contentChanges[i + 1].range.start.line)) {
+                                   i++
                             }
+                            const pseudoEvent = {}
+                            pseudoEvent.contentChanges = []
+                            pseudoEvent.contentChanges.push(event.contentChanges[i])
+                            this.getDiagnostics(document, pseudoEvent)
                      }
                      return
               }
-              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri)
+              const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
               const collection = table.collection
               let startLine = 0
               let endLine = document.lineCount
@@ -122,7 +120,6 @@ class diagnosticProvider {
                             table.lines[lineNumber].diagnostics = []
                      }
               }
-              // this.scanRefs(document, table)
               if (vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
                      collection.set(document.uri, this.getDocDiags(table))
               }
@@ -245,11 +242,6 @@ class diagnosticProvider {
                                    if (invalid) {
                                           const endChar = textLength;
                                           const range = new vscode.Range(lineNumber, 0, lineNumber, endChar)
-                                          // for (let i = 0; i < symarray.length; i++) {
-                                          //        if (symarray[i].range.intersection(range)) {
-                                          //               return diagnosticsArray
-                                          //        }
-                                          // }
                                           diagnosticsArray.push(new vscode.Diagnostic(range, "Bad operands"));
                                    }
                             }
