@@ -14,8 +14,9 @@ class ASMDocumentSymbolProvider {
             return
         }
         const output = [];
-        for (const name in table.symbolDeclarations) {
-            const symbol = table.symbolDeclarations[name];
+        const symbols = this.symbolDocumenter.getAllinTable(table, "symbol", {})
+        for (const name in symbols) {
+            const symbol = symbols[name];
             const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
             const location = new vscode.Location(symbol.uri, range)
             output.push(new vscode.SymbolInformation(symbol.name, symbol.kind, undefined, location));     

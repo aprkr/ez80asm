@@ -4,7 +4,7 @@ const vscode = require("vscode");
 const imports = require("./imports")
 
 /**
- * Searches table.possibleRefs to find semantic tokens
+ * Searches refs to find semantic tokens
  */
 class semanticsProvider {
        /**
@@ -27,12 +27,13 @@ class semanticsProvider {
                      return
               }
               const legend = this.legend
-              const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
+              const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
               const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-              for (let i = 0; i < table.possibleRefs.length; i++) {
-                     const symbol = this.symbolDocumenter.checkSymbol(table.possibleRefs[i].text, document.uri, symbols)
+              const refs = this.symbolDocumenter.getAllinTable(table, "refs", [])
+              for (let i = 0; i < refs.length; i++) {
+                     const symbol = this.symbolDocumenter.checkSymbol(refs[i].name, document.uri, symbols)
                      if (symbol) {
-                            const range = table.possibleRefs[i].range
+                            const range = refs[i].range
                             if (symbol.kind == vscode.SymbolKind.Method) {
                                    tokensBuilder.push(range, 'function');
                             } else if (symbol.kind == vscode.SymbolKind.Variable) {

@@ -1,12 +1,15 @@
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
-const symbolDocumenter = require("./symbolDocumenter")
+const imports = require("./imports")
 
 /**
  * Allows you to rename symbols
  */
 class renameProvider {
+       /**
+        * @param {imports.symbolDocumenter} symbolDocumenter 
+        */
        constructor(symbolDocumenter) {
               this.symbolDocumenter = symbolDocumenter
        }
@@ -44,61 +47,32 @@ class renameProvider {
                                    return new vscode.WorkspaceEdit()
                             }
                             const uri = vscode.Uri.file(symbol.fsPath)
-                            const table = this.symbolDocumenter.documents[uri.fsPath]
-                            delete table.symbolDeclarations[text]
-                            table.symbolDeclarations[newName] = new symbolDocumenter.SymbolDescriptor(symbol.line, symbol.kind, symbol.documentation, symbol.fsPath, newName);
                             let edits = new vscode.WorkspaceEdit()
-                            const range = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
-                            edits.replace(uri, range, newName)
-                            this.addEdits(document.uri.fsPath, [], edits, newName, text) // this will grab all the edits
+                            const oldRange = new vscode.Range(symbol.line, 0, symbol.line, symbol.name.length)
+                            const oldName = symbol.name
+                            symbol.name = newName
+                            edits.replace(uri, oldRange, newName)
+                            const refs = this.symbolDocumenter.getAllof(document.uri.fsPath, "refs", [])
+                            for (let i = 0; i < refs.length; i++) {
+                                   let match = false
+                                   if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
+                                          match = refs[i].name.toLowerCase() === oldName.toLowerCase()
+                                   } else {
+                                          match = refs[i].name === oldName
+                                   }
+                                   if (match) {
+                                          const oldRef = refs[i]
+                                          const uri = vscode.Uri.file(oldRef.fsPath)
+                                          edits.replace(uri, oldRef.range, newName)
+                                          oldRef.endChar = oldRef.startChar + newName.length
+                                          oldRef.name = newName
+                                   }
+                            }
                             return edits
                      }
               }
               vscode.window.showWarningMessage("Symbol declaration not found")
               return new vscode.WorkspaceEdit()
-       }
-       /**
-        * 
-        * @param curfsPath 
-        * @param {[]} searched 
-        * @param {vscode.WorkspaceEdit} edits 
-        * @param {String} newName 
-        * @param {String} oldName 
-        */
-       addEdits(curfsPath, searched, edits, newName, oldName) {
-              let table = this.symbolDocumenter.documents[curfsPath]
-              searched.push(curfsPath)
-              let length = table.possibleRefs.length
-              for (let i = 0; i < length; i++) {
-                     let match = false
-                     if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
-                            match = table.possibleRefs[i].text.toLowerCase() === oldName.toLowerCase()
-                     } else {
-                            match = table.possibleRefs[i].text === oldName
-                     }
-                     if (match) {
-                            const oldRef = table.possibleRefs[i]
-                            table.possibleRefs.splice(i, 1)
-                            length--
-                            i--
-                            const ref = new symbolDocumenter.possibleRef(oldRef.line, oldRef.startChar, oldRef.startChar + newName.length, newName, oldRef.uri)
-                            table.possibleRefs.push(ref)
-                            edits.replace(oldRef.uri, oldRef.range, newName)
-                     }
-              }
-              for (let i = 0; i < table.includes.length; i++) { // search included files
-                     if (searched.indexOf(table.includes[i].fsPath) == -1) {
-                            this.addEdits(table.includes[i], searched, edits, newName, oldName)
-                     }
-              }
-              for (var fsPath in this.symbolDocumenter.documents) { // search files that include this one
-                     table = this.symbolDocumenter.documents[fsPath]
-                     for (let i = 0; i < table.includes.length; i++) {
-                            if (table.includes[i].fsPath === curfsPath && searched.indexOf(fsPath) == -1) {
-                                   this.addEdits(fsPath, searched, edits, newName, oldName)
-                            }
-                     }
-              }
        }
 }
 exports.renameProvider = renameProvider

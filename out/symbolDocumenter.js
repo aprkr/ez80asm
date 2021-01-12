@@ -6,17 +6,16 @@ const fs = require("fs");
 const commentLineRegex = /^\s*;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
-const FILE_NAME = 2;
-const labelDefinitionRegex = /^[\w\.]+:{0,2}((?=\s*;|\s*$)|(?=[\s\.]+equ))/i;
+// const FILE_NAME = 2;
+const labelDefinitionRegex = /^(?!\.?assume\b|\.?org\b|\.?db\b|\.?dw\b|\.?dl\b|\.?list\b|\.?nolist\b|\.?end\b)[\w\.]+:{0,2}/i;
 // const equateRegexold = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|set)[\W]+.*$/i;
-const equateRegex = /^\s*[\w\.]+\s+\.?(equ|set)\s.+/i
+const equateRegex = /^[\w\.]+(?=[\s\.]+equ\s+.+$)/i
 const nonCommentRegex = /^([^;]+[^\,\s;])/g
 const wordregex = /[\$\%]?[\w\.]+/g
 const nonRegRegex = /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)|\b([A-Fa-f0-9]+h\b)|\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b|\b(equ|set)\b/gi
 
 class SymbolDescriptor {
-       constructor(line, kind, documentation, fsPath, name) {
-              this.line = line
+       constructor(kind, documentation, fsPath, name) {
               this.kind = kind
               this.documentation = documentation
               this.fsPath = fsPath
@@ -24,42 +23,22 @@ class SymbolDescriptor {
        }
 }
 class possibleRef {
-       constructor(line, startChar, endChar, text, fsPath) {
-              this.line = line
+       constructor(startChar, endChar, name, fsPath) {
               this.startChar = startChar
               this.endChar = endChar
-              this.text = text
+              this.name = name
               this.fsPath = fsPath
-       }
-       get range() {
-              return new vscode.Range(this.line, this.startChar, this.line, this.endChar)
-       }
-       get location() {
-              return new vscode.Location(this.uri, this.range)
-       }
-       get uri() {
-              return vscode.Uri.file(this.fsPath)
        }
 }
 class DocumentTable {
        constructor(uri) {
               this.lastModified = (fs.statSync(uri.fsPath)).mtimeMs
+              this.collection = vscode.languages.createDiagnosticCollection()
+              this.fsPath = uri.fsPath
+              this.lineCount = 0;
+              this.lines = []
               this.includes = []
               this.includeFileLines = []
-              this.fsPath = uri.fsPath
-              // this.directory = path.dirname(uri.fsPath)
-              // this.path = uri.fsPath
-              this.symbolDeclarations = {}
-              this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
-              this.diagnosticCollection.array = []
-              this.diagnosticCollection.symarray = []
-              this.diagnosticCollection.redefArray = []
-              this.lineCount = 0;
-              this.possibleRefs = []
-              this.reDefinitions = []
-       }
-       get fullArray() {
-              return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
        }
 }
 class symbolDocumenter {
@@ -67,204 +46,142 @@ class symbolDocumenter {
               this.documents = {}
               this.extensionPath = (vscode.extensions.getExtension("alex-parker.ez80-asm")).extensionPath;
               this.cacheFolder = path.join(this.extensionPath, "/caches")
+              // this.symbolRenameEmitter = new vscode.EventEmitter()
+              // this.renameTimeout = 0
+              // this.onDidRenameSymbol = (event) => {
+              //        this.renameTimeout = setTimeout(() => { this.renameTimeout = 0 }, 50)
+              // };
+              // this.symbolRenameEmitter.event(this.onDidRenameSymbol)
        }
        /**
-        * 
         * @param {vscode.TextDocument} document 
-        * @param {vscode.TextDocumentChangeEvent} event 
+        * @param {vscode.TextDocumentChangeEvent} event
         */
        declareSymbols(document, event) {
-              if (!event) {
-                     this.readTableFromFile(document.uri.fsPath)
-              }
-              if (event && event.contentChanges.length == 0) {
-                     return
-              }
+              let table = new DocumentTable(document.uri)
+              let startLine = 0
+              let endLine = document.lineCount
               if (event && event.contentChanges.length > 1) {
-                     for (let i = 1; i < event.contentChanges.length; i++) {
+                     for (let i = 0; i < event.contentChanges.length; i++) {
+                            while (i < event.contentChanges.length - 1 && (event.contentChanges[i].range.start.line == event.contentChanges[i].range.end.line
+                                   && event.contentChanges[i + 1].range.start.line == event.contentChanges[i + 1].range.end.line
+                                   && event.contentChanges[i].range.start.line == event.contentChanges[i + 1].range.start.line)) {
+                                   i++
+                            }
                             const pseudoEvent = {}
                             pseudoEvent.contentChanges = []
                             pseudoEvent.contentChanges.push(event.contentChanges[i])
                             this.declareSymbols(document, pseudoEvent)
                      }
+                     return
               }
-              let table = new DocumentTable(document.uri)
-              let startLine = 0;
-              let endLine = document.lineCount;
-              if (event && event.contentChanges.length > 0) {
-                     table = this.documents[document.uri.fsPath];
+              if (event && event.contentChanges.length == 1) {
+                     table = this.documents[document.uri.fsPath]
                      startLine = event.contentChanges[0].range.start.line
                      endLine = event.contentChanges[0].range.end.line + 1
                      const deleteEndLine = endLine
+                     const diff = deleteEndLine - startLine
                      const newLinematch = event.contentChanges[0].text.match(/\n/g)
                      if (newLinematch) {
                             endLine += newLinematch.length
-                     } else if (table.lineCount > document.lineCount && event.contentChanges[0].text === "") {
+                     } else if (table.lines.length > document.lineCount && event.contentChanges[0].text === "") {
                             endLine = startLine + 1
                      }
-                     while (endLine < document.lineCount && commentLineRegex.exec(document.lineAt(endLine).text)) {
-                            endLine++
+                     table.lines.splice(startLine, diff)
+                     let docLine = endLine
+                     while (docLine < document.lineCount && commentLineRegex.exec(document.lineAt(docLine).text)) {
+                            docLine++
                      }
-                     if (endLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(endLine).text)) {
-                            let text = document.lineAt(endLine).text.replace(/:/g, "")
+                     if (docLine < document.lineCount && labelDefinitionRegex.exec(document.lineAt(docLine).text)) {
+                            let text = document.lineAt(docLine).text.replace(/:/g, "")
                             text = (text.match(/[\.\w+]+/))[0]
-                            let symbol = this.checkSymbol(text, document.uri, table.symbolDeclarations)
-                            symbol.documentation = this.getDocumentation(document, endLine, symbol.kind)
+                            let symbol = this.checkSymbol(text, document.uri, this.getAllinTable(table, "symbol", {}))
+                            symbol.documentation = this.getDocumentation(document, docLine, symbol.kind)
                      }
-                     const lineDiff = table.lineCount != document.lineCount
-                     for (var symName in table.symbolDeclarations) {
-                            const symLine = table.symbolDeclarations[symName].line
-                            if (symLine >= startLine && symLine < deleteEndLine) {
-                                   delete table.symbolDeclarations[symName];
-                                   continue
-                            }
-                            if (lineDiff && table.symbolDeclarations[symName].line >= startLine) {
-                                   table.symbolDeclarations[symName].line += document.lineCount - table.lineCount
-                            }
+              } else if (event && event.contentChanges.length == 0) {
+                     return
+              } else if (!event && !this.documents[document.uri.fsPath]) {
+                     this.readTableFromFile(document.uri.fsPath)
+                     if (this.documents[document.uri.fsPath]) {
+                            return
                      }
-                     for (let i = 0; i < table.reDefinitions.length; i++) {
-                            if (table.reDefinitions[i].line >= startLine && table.reDefinitions[i].line < deleteEndLine) {
-                                   table.reDefinitions.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && table.reDefinitions[i].line >= startLine) {
-                                   table.reDefinitions[i].line += document.lineCount - table.lineCount
-                            }
-                            if (table.reDefinitions[i].line > document.lineCount - 1 || table.reDefinitions[i].line < 0) {
-                                   table.reDefinitions.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                     }
-                     for (let i = 0; i < table.possibleRefs.length; i++) {
-                            if (table.possibleRefs[i].line >= startLine && table.possibleRefs[i].line < deleteEndLine) {
-                                   table.possibleRefs.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && table.possibleRefs[i].line >= startLine) {
-                                   table.possibleRefs[i].line += document.lineCount - table.lineCount
-                            }
-                            if (table.possibleRefs[i].line > document.lineCount - 1 || table.possibleRefs[i].line < 0) {
-                                   table.possibleRefs.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                     }
-                     for (let i = 0; i < table.includeFileLines.length; i++) {
-                            let line = table.includeFileLines[i]
-                            if (line >= startLine && line < deleteEndLine) {
-                                   table.includeFileLines.splice(i, 1)
-                                   table.includes.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && line >= startLine) {
-                                   table.includeFileLines[i] += document.lineCount - table.lineCount
-                            }
-                            if (line > document.lineCount - 1 || line < 0) {
-                                   table.includeFileLines.splice(i, 1)
-                                   table.includes.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                     }
-                     const diagnosticsArray = table.diagnosticCollection.array
-                     for (let i = 0; i < diagnosticsArray.length; i++) {
-                            let range = diagnosticsArray[i].range
-                            let diagLine = range.start.line
-                            if (diagLine >= startLine && diagLine < deleteEndLine) {
-                                   diagnosticsArray.splice(i, 1)
-                                   i--
-                                   continue
-                            }
-                            if (lineDiff && diagLine > startLine) {
-                                   diagLine += document.lineCount - table.lineCount
-                                   if (diagLine < 0) {
-                                          diagnosticsArray.splice(i, 1)
-                                          i--
-                                          continue
-                                   } else {
-                                          diagnosticsArray[i].range = new vscode.Range(diagLine, range.start.character, diagLine, range.end.character)
-                                   }
-                            }
-                     }
-                     table.lineCount = document.lineCount
-              } else {
-                     table.lineCount = document.lineCount
               }
-              this.documents[document.uri.fsPath] = table;
+              this.documents[document.uri.fsPath] = table
               for (let lineNumber = startLine; lineNumber < endLine; lineNumber++) {
-                     const line = document.lineAt(lineNumber);
-                     if (line.text.match(/(^\s*$)|(^:.*)/)) {
-                            continue;
+                     const includeLineIndex = table.includeFileLines.indexOf(lineNumber)
+                     if (includeLineIndex != -1) {
+                            table.includeFileLines.splice(includeLineIndex, 1)
+                            table.includes.splice(includeLineIndex, 1)
                      }
-                     const commentLineMatch = commentLineRegex.exec(line.text);
+                     const line = {}
+                     line.diagnostics = []
+                     if (!event) {
+                            table.lines.push(line)
+                     } else {
+                            table.lines.splice(lineNumber, 0, line)
+                     }
+                     const docLine = document.lineAt(lineNumber)
+                     if (docLine.text.match(/^\s*$/)) {
+                            continue
+                     }
+                     const commentLineMatch = commentLineRegex.exec(docLine.text);
                      if (commentLineMatch) {
                             continue;
                      }
-                     const includeLineMatch = includeLineRegex.exec(line.text);
-                     const labelMatch = labelDefinitionRegex.exec(line.text);
-                     let nonCommentMatch = line.text.match(nonCommentRegex)
+                     const lineRefs = []
+                     let firstWord = 1
+                     const includeLineMatch = includeLineRegex.exec(docLine.text)
+                     const labelMatch = labelDefinitionRegex.exec(docLine.text)
+                     const equateMatch = equateRegex.exec(docLine.text)
+                     let nonCommentMatch = docLine.text.match(nonCommentRegex)
                      nonCommentMatch = nonCommentMatch[0].replace(/(\".+\")|(\'.+\')/g, "")
                      const wordmatch = nonCommentMatch.match(wordregex);
-                     if (!line.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i) && ((!labelMatch && !includeLineMatch) || (equateRegex.test(line.text)))) {
-                            let char = 0
-                            let startChar = 0
-                            for (let index = 1; index < wordmatch.length; ++index) {
-                                   if (!wordmatch[index].match(nonRegRegex)) {
-                                          if (index == 1 && wordmatch[index].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
-                                                 continue
-                                          }
-                                          startChar = nonCommentMatch.indexOf(wordmatch[index], char);
-                                          const endChar = startChar + wordmatch[index].length
-                                          const ref = new possibleRef(lineNumber, startChar, endChar, wordmatch[index], document.uri.fsPath)
-                                          table.possibleRefs.push(ref)
-                                   }
-                                   char = startChar + wordmatch[index].length;
-                            }
-                     }
                      if (includeLineMatch) {
-                            const filename = includeLineMatch[FILE_NAME];
-                            let includeLineIndex = table.includeFileLines.indexOf(lineNumber)
-                            if (includeLineIndex != -1) {
-                                   table.includeFileLines.splice(includeLineIndex, 1)
-                                   table.includes.splice(includeLineIndex, 1)
-                            }
+                            const fileName = includeLineMatch[2]
                             const fsRelativeDir = path.dirname(document.uri.fsPath);
-                            const filePath = this._resolveFilename(filename, fsRelativeDir); // this also documents any included files
-                            if (filePath === "") {
+                            const fsPath = this._resolveFilename(fileName, fsRelativeDir); // this also documents any included files
+                            if (fsPath === "") {
                                    continue
                             }
-                            const includeUri = vscode.Uri.file(filePath);
-                            if (table.includes.indexOf(includeUri.fsPath) == -1) {
-                                   table.includes.push(includeUri.fsPath);
-                                   table.includeFileLines.push(lineNumber)
-                            }
+                            table.includes.push(fsPath);
+                            table.includeFileLines.push(lineNumber)
+                            continue
+                     } else if (equateMatch) {
+                            firstWord = 2
+                            const kind = vscode.SymbolKind.Variable;
+                            const name = equateMatch[0]
+                            const documentation = this.getDocumentation(document, lineNumber, kind);
+                            const symbol = new SymbolDescriptor(kind, documentation, document.uri.fsPath, name);
+                            line.symbol = symbol
                      } else if (labelMatch) {
+                            firstWord = 1
                             const declaration = labelMatch[0];
-                            if (declaration.match(/^\s*\.?(list|nolist|end)/)) { // these are directives, so they can't be labels
-                                   continue
-                            }
                             let kind = undefined;
                             if (declaration.indexOf(":") != -1) {
                                    kind = vscode.SymbolKind.Method;
-                            } else if (equateRegex.test(line.text)) {
-                                   kind = vscode.SymbolKind.Variable
                             }
                             const name = declaration.replace(/:/g, "");
                             let documentation = this.getDocumentation(document, lineNumber, kind);
-                            const symbol = new SymbolDescriptor(lineNumber, kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
-                            if (this.checkSymbol(name, document.uri, table.symbolDeclarations)) {
-                                   table.reDefinitions.push(symbol)
-                                   continue
-                            }
-                            table.symbolDeclarations[name] = symbol
+                            const symbol = new SymbolDescriptor(kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
+                            line.symbol = symbol
                      }
-              }
-              if (document.fileName.match(/.+\.inc/i)) {
-                     table.possibleRefs = []
+                     if (!docLine.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i)) {
+                            let char = 0
+                            let startChar = 0
+                            for (firstWord; firstWord < wordmatch.length; ++firstWord) {
+                                   if (!wordmatch[firstWord].match(nonRegRegex)) {
+                                          if (firstWord == 1 && wordmatch[firstWord].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
+                                                 continue
+                                          }
+                                          startChar = nonCommentMatch.indexOf(wordmatch[firstWord], char);
+                                          const endChar = startChar + wordmatch[firstWord].length
+                                          const ref = new possibleRef(startChar, endChar, wordmatch[firstWord], document.uri.fsPath)
+                                          lineRefs.push(ref)
+                                   }
+                                   char = startChar + wordmatch[firstWord].length;
+                            }
+                     }
+                     line.refs = lineRefs
               }
        }
        /**
@@ -310,7 +227,7 @@ class symbolDocumenter {
               let simpleJoin = path.resolve(fsRelativeDir, filename);
               if (fs.existsSync(simpleJoin)) {
                      let includeUri = vscode.Uri.file(simpleJoin);
-                     const table = this.documents[includeUri.fsPath]; // this.files is very picky
+                     const table = this.documents[includeUri.fsPath];
                      if (table == undefined) {
                             vscode.workspace.openTextDocument(includeUri).then((document) => {
                                    this.declareSymbols(document);
@@ -328,7 +245,7 @@ class symbolDocumenter {
                      var includePath = includePathConfiguration[i];
                      // If the path is relative, make it absolute starting from workspace root.
                      if (path.isAbsolute(includePath) == false) {
-                            if (vscode.workspace.workspaceFolders !== undefined) {
+                            if (vscode.workspace.workspaceFolders) {
                                    includePath = path.resolve(vscode.workspace.workspaceFolders[0].uri.fsPath, includePath);
                             }
                      }
@@ -337,19 +254,18 @@ class symbolDocumenter {
                      if (fs.existsSync(joined)) {
                             let includeUri = vscode.Uri.file(joined);
                             const table = this.documents[includeUri.fsPath]; // this.files is very picky
-                            if (table == undefined) {
+                            if (!table) {
                                    vscode.workspace.openTextDocument(includeUri).then((document) => {
                                           this.declareSymbols(document);
                                    });
                             }
-                            return joined;
+                            return includeUri.fsPath;
                      }
               }
               // Nothing found, return the empty string.
               return "";
        }
        /**
-        * 
         * @param {vscode.TextDocument} document 
         */
        writeTableToFile(document) {
@@ -375,69 +291,105 @@ class symbolDocumenter {
               }
               const fileStats = fs.statSync(fsPath)
               const table = JSON.parse(fs.readFileSync(cachePath, "utf8"));
-              for (let i = 0; i < table.possibleRefs.length; i++) {
-                     const ref = table.possibleRefs[i]
-                     table.possibleRefs[i] = new possibleRef(ref.line, ref.startChar, ref.endChar, ref.text, table.fsPath)
-              }
-              table.fullArray = () => {
-                     return this.diagnosticCollection.array.concat(this.diagnosticCollection.symarray.concat(this.diagnosticCollection.redefArray))
-              }
               if (table && table.fsPath == fsPath && table.lastModified == fileStats.mtimeMs) {
                      this.documents[fsPath] = table
-                     const diagnostics = vscode.languages.createDiagnosticCollection();
-                     diagnostics.array = table.diagnosticCollection.array
-                     diagnostics.symarray = table.diagnosticCollection.symarray
-                     diagnostics.redefArray = table.diagnosticCollection.redefArray
-                     table.diagnosticCollection = diagnostics
+                     table.collection = vscode.languages.createDiagnosticCollection();
                      for (let i = 0; i < table.includes.length; i++) {
                             this.readTableFromFile(table.includes[i])
+                            if (!this.documents[table.includes[i]]) {
+                                   const fileURI = vscode.Uri.file(table.includes[i])
+                                   vscode.workspace.openTextDocument(fileURI).then((document) => {
+                                          if (!this.documents[document.uri.fsPath]) {
+                                                 scanDoc(document);
+                                          }
+                                   });
+                            }
                      }
               }
        }
        /**
-        * 
-        * @param {vscode.Uri} uri 
+        * Output has to be passed
+        * @param {String} fsPath 
+        * @param {String} type 
+        * @param {[]|{}} output 
         * @param {[]} searched 
-        * @param {{}} output 
         */
-       getAvailableSymbols(uri, searched, output) {
-              if (!output || !searched) {
+       getAllof(fsPath, type, output, searched) {
+              if (!output) {
+                     console.log("Output not declared")
+              }
+              if (!searched) {
                      searched = []
-                     output = {}
               }
-              let table = this.documents[uri.fsPath]
-              searched.push(uri.fsPath)
-              for (var name in table.symbolDeclarations) { // search the current fsPath
-                     output[name] = table.symbolDeclarations[name]
-              }
+              let table = this.documents[fsPath]
+              searched.push(fsPath)
+              this.getAllinTable(table, type, output)
               for (let i = 0; i < table.includes.length; i++) { // search included files
                      if (searched.indexOf(table.includes[i]) == -1) {
-                            const includeUri = vscode.Uri.file(table.includes[i])
-                            this.getAvailableSymbols(includeUri, searched, output)
+                            this.getAllof(table.includes[i], type, output, searched)
                      }
               }
               for (var docPath in this.documents) { // search files that include this one
                      table = this.documents[docPath]
                      for (let i = 0; i < table.includes.length; i++) {
-                            if (table.includes[i] === uri.fsPath && searched.indexOf(docPath) == -1) {
-                                   const docUri = vscode.Uri.file(docPath)
-                                   this.getAvailableSymbols(docUri, searched, output)
+                            if (table.includes[i] === fsPath && searched.indexOf(docPath) == -1) {
+                                   this.getAllof(docPath, type, output, searched)
                             }
                      }
               }
               return output
        }
+       /**
+        * Output has to be passed
+        * @param {DocumentTable} table 
+        * @param {String} type 
+        * @param {[]|{}} output 
+        */
+       getAllinTable(table, type, output) {
+              if (output instanceof Array) {
+                     const lines = table.lines.filter((line, index) => {
+                            line.lineNumber = index
+                            return line[type]
+                     })
+                     for (let i = 0; i < lines.length; i++) {
+                            for (let j = 0; j < lines[i][type].length; j++) {
+                                   const itemOfType = lines[i][type][j]
+                                   itemOfType.line = lines[i].lineNumber
+                                   if (!itemOfType.range) {
+                                          Object.defineProperty(itemOfType, 'range', {
+                                                 get: function () { return new vscode.Range(this.line, this.startChar, this.line, this.endChar) }
+                                          });
+                                   }
+                                   output.push(itemOfType)
+                            }
+                     }
+                     return output
+              } else if (output instanceof Object) {
+                     const lines = table.lines.filter((line, index) => {
+                            line.lineNumber = index
+                            return line[type]
+                     })
+                     for (let i = 0; i < lines.length; i++) {
+                            const itemOfType = lines[i][type]
+                            itemOfType.line = lines[i].lineNumber
+                            output[itemOfType.name] = itemOfType
+                     }
+                     return output
+              } else {
+                     console.log("Invalid output")
+              }
+       }
        checkSymbol(name, uri, symbols) {
               if (!symbols) {
-                     symbols = this.getAvailableSymbols(uri)
+                     symbols = this.getAllof(uri.fsPath, "symbol", {})
               }
               if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
-                     return symbols[Object.keys(symbols).find(key => key.toLowerCase() === name.toLowerCase())]
+                     const symbol = symbols[Object.keys(symbols).find(key => key.toLowerCase() === name.toLowerCase())]
+                     return symbol
               } else {
                      return symbols[name]
               }
        }
-
 }
 exports.symbolDocumenter = symbolDocumenter
 exports.SymbolDescriptor = SymbolDescriptor

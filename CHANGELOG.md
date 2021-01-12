@@ -1,5 +1,6 @@
 ## 1.4.3
 * Removed support for non-ez80 assembly
+* I realized I badly rushed earlier versions, so extensive testing on this version
 
 ## 1.4.2
 * More fixes

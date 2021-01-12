@@ -4,6 +4,9 @@ const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
 const regRegex = /\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b/i
+const registers = regRegex.source.match(/(?<=\(|\|)[\w\']+(?=\||\))+/g) 
+const reg8 = /\br\b/
+const multireg = /\brr\b/
 /**
  * Provides the completions items for Intellisense,
  * uses instruction.json to create snippets and the 
@@ -64,19 +67,19 @@ class ASMCompletionProposer {
                     if (name.includes("a,") && !name.includes("ld a")) {
                         runningList.push(name.replace("a, ", ""));
                     }
-                    if (name.includes("r8")) {
-                        runningList.push(name.replace("r8", "a"));
-                        runningList.push(name.replace("r8", "b"));
-                        runningList.push(name.replace("r8", "c"));
-                        runningList.push(name.replace("r8", "d"));
-                        runningList.push(name.replace("r8", "e"));
-                        runningList.push(name.replace("r8", "h"));
-                        runningList.push(name.replace("r8", "l"));
-                    } else if (name.includes("r24")) {
-                        runningList.push(name.replace("r24", "bc"));
-                        runningList.push(name.replace("r24", "de"));
-                        runningList.push(name.replace("r24", "hl"));
-                    } else if (name.includes(" ir")) {
+                    if (name.match(reg8)) {
+                        runningList.push(name.replace(reg8, "a"));
+                        runningList.push(name.replace(reg8, "b"));
+                        runningList.push(name.replace(reg8, "c"));
+                        runningList.push(name.replace(reg8, "d"));
+                        runningList.push(name.replace(reg8, "e"));
+                        runningList.push(name.replace(reg8, "h"));
+                        runningList.push(name.replace(reg8, "l"));
+                    } else if (name.match(multireg)) {
+                        runningList.push(name.replace(multireg, "bc"));
+                        runningList.push(name.replace(multireg, "de"));
+                        runningList.push(name.replace(multireg, "hl"));
+                    } else if (name.match(/\bir\b/)) {
                         runningList.push(name.replace("ir", "ixh"));
                         runningList.push(name.replace("ir", "ixl"));
                         runningList.push(name.replace("ir", "iyh"));
@@ -88,11 +91,6 @@ class ASMCompletionProposer {
                         }
                         runningList.push(name.replace("ix/y", "ix"));
                         runningList.push(name.replace("ix/y", "iy"));
-                    } else if (name.includes("rxy")) {
-                        runningList.push(name.replace("rxy", "bc"));
-                        runningList.push(name.replace("rxy", "de"));
-                        runningList.push(name.replace("rxy", "ix"));
-                        runningList.push(name.replace("rxy", "iy"));
                     } else if (name.includes("jr cc")) {
                         runningList.push(name.replace("cc", "c"));
                         runningList.push(name.replace("cc", "nc"));
@@ -164,7 +162,7 @@ class ASMCompletionProposer {
                 let insertText = element.name;
                 let tabIndex = 1;
                 insertText = insertText.replace("$", "\\$");
-                insertText = insertText.replace(/\b(r8|R8|r24|R24|n|N|mmn|MMN|ir|IR|ix\/y|IX\/Y|d|D|rxy|RXY|bit|BIT|cc|CC)\b/g, (substring) => {
+                insertText = insertText.replace(/\b(r|rr|n|mmn|ir|ix\/y|d|rxy|bit|cc)\b/gi, (substring) => {
                     return `\${${tabIndex++}:${substring}}`;
                 });
                 // If there's only one completion item, set index to 0 for a better
@@ -177,8 +175,8 @@ class ASMCompletionProposer {
                 }
                 this.instructionItems.push(item);
             })
-            this.instructionItemsNonForm = [...new Set(this.instructionItemsNonForm)]
         });
+        this.instructionItemsNonForm = [...new Set(this.instructionItemsNonForm)]
     }
     /**
      * 
@@ -190,13 +188,12 @@ class ASMCompletionProposer {
     provideCompletionItems(document, position, token, context) {
         let output = [];
         const line = document.lineAt(position.line)
-        const symbols = this.symbolDocumenter.getAvailableSymbols(document.uri);
-        const range = document.getWordRangeAtPosition(position, regRegex)
+        const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
         if (line.text.match(/^\s+\w*$/) && vscode.workspace.getConfiguration().get("ez80-asm.enableSnippetSuggestions")) {
             this.instructionItems.forEach((item) => {
                 output.push(item);
             })
-        } else {
+        } else if (line.text.match(/^\s+/)) {
             for (const name in symbols) {
                 if (symbols.hasOwnProperty(name)) {
                     const symbol = symbols[name];
@@ -214,8 +211,8 @@ class ASMCompletionProposer {
                     output.push(item);
                 }
             }
-            if (range) {
-                output.push(new vscode.CompletionItem(document.getText(range), vscode.CompletionItemKind.Keyword))
+            for (let i = 0; i < registers.length; i++) {
+                output.push(new vscode.CompletionItem(registers[i], vscode.CompletionItemKind.Keyword))
             }
         }
         return output;
