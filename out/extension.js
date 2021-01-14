@@ -12,7 +12,7 @@ const completion = require("./completion")
 const rename = require("./rename")
 const references = require("./references")
 
-const tokenTypes = ['function','variable', 'class', 'label'];
+const tokenTypes = ['function','variable', 'label', 'macro'];
 const tokenModifiers = ['declaration'];
 const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
 

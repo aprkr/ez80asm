@@ -7,11 +7,15 @@ const commentLineRegex = /^\s*;\s*(.*)$/;
 const endCommentRegex = /^[^;]+;\s*(.*)$/;
 const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
 // const FILE_NAME = 2;
+const opcodeRegex = /\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL)\b/i;
 const labelDefinitionRegex = /^(?!\.?assume\b|\.?org\b|\.?db\b|\.?dw\b|\.?dl\b|\.?list\b|\.?nolist\b|\.?end\b)[\w\.]+:{0,2}/i;
 // const equateRegexold = /^[\s]*[a-zA-Z_][a-zA-Z_0-9]*[\W]+(equ|set)[\W]+.*$/i;
+const conditionalRegex = /\b(Z|NZ|C|NC|P|M|PO|PE)\b/i
 const equateRegex = /^[\w\.]+(?=[\s\.]+equ\s+.+$)/i
+const directiveRegex = /(\b|\.)(org|ds|db|dw|dl|assume|list|nolist|end|equ)\b/gi
 const nonCommentRegex = /^([^;]+[^\,\s;])/g
 const wordregex = /[\$\%]?[\w\.]+/g
+const defineRegex = /^\s*\#?define\s+([\w\.]+(\(.*\))?)/i;
 const nonRegRegex = /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)|\b([A-Fa-f0-9]+h\b)|\b(A|B|C|D|E|F|H|L|I|R|IX|IY|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|AF'|MB)\b|\b(equ|set)\b/gi
 
 class SymbolDescriptor {
@@ -133,6 +137,7 @@ class symbolDocumenter {
                      const includeLineMatch = includeLineRegex.exec(docLine.text)
                      const labelMatch = labelDefinitionRegex.exec(docLine.text)
                      const equateMatch = equateRegex.exec(docLine.text)
+                     const defineMatch = defineRegex.exec(docLine.text)
                      let nonCommentMatch = docLine.text.match(nonCommentRegex)
                      nonCommentMatch = nonCommentMatch[0].replace(/(\".+\")|(\'.+\')/g, "")
                      const wordmatch = nonCommentMatch.match(wordregex);
@@ -146,6 +151,16 @@ class symbolDocumenter {
                             table.includes.push(fsPath);
                             table.includeFileLines.push(lineNumber)
                             continue
+                     } else if (defineMatch) {
+                            let defineText = defineMatch[1]
+                            // defineText = defineText.replace(/\(.*\)/, "\(.*\)")
+                            defineText = defineText.replace(/\(.*\)/, "")
+                            const name = defineText
+                            firstWord = 1
+                            wordmatch.length = 2
+                            const kind = vscode.SymbolKind.Constant
+                            const symbol = new SymbolDescriptor(kind, undefined, document.uri.fsPath, name)
+                            line.symbol = symbol
                      } else if (equateMatch) {
                             firstWord = 2
                             const kind = vscode.SymbolKind.Variable;
@@ -156,21 +171,21 @@ class symbolDocumenter {
                      } else if (labelMatch) {
                             firstWord = 1
                             const declaration = labelMatch[0];
-                            let kind = undefined;
-                            if (declaration.indexOf(":") != -1) {
-                                   kind = vscode.SymbolKind.Method;
-                            }
+                            const kind = vscode.SymbolKind.Method
                             const name = declaration.replace(/:/g, "");
-                            let documentation = this.getDocumentation(document, lineNumber, kind);
-                            const symbol = new SymbolDescriptor(kind == undefined ? vscode.SymbolKind.Function : kind, documentation, document.uri.fsPath, name);
+                            const documentation = this.getDocumentation(document, lineNumber, kind);
+                            const symbol = new SymbolDescriptor(kind, documentation, document.uri.fsPath, name);
                             line.symbol = symbol
                      }
-                     if (!docLine.text.match(/(^\s*\#)|(^\s*if)|(^\s*\.assume\s+adl)/i)) {
+                     if (!docLine.text.match(/(^\s*\#(include|ifndef|ifdef|if|elif|else|endif))|(^\s*\.assume\s+adl)/i)) {
                             let char = 0
                             let startChar = 0
+                            if (firstWord == 0 && (wordmatch[0].match(opcodeRegex) || wordmatch[0].match(directiveRegex))) {
+                                   firstWord++
+                            }
                             for (firstWord; firstWord < wordmatch.length; ++firstWord) {
                                    if (!wordmatch[firstWord].match(nonRegRegex)) {
-                                          if (firstWord == 1 && wordmatch[firstWord].match(/\b(Z|NZ|C|NC|P|M|PO|PE)\b/i)) {
+                                          if (firstWord == 1 && wordmatch[firstWord].match(conditionalRegex)) {
                                                  continue
                                           }
                                           startChar = nonCommentMatch.indexOf(wordmatch[firstWord], char);
@@ -349,7 +364,7 @@ class symbolDocumenter {
               if (output instanceof Array) {
                      const lines = table.lines.filter((line, index) => {
                             line.lineNumber = index
-                            return line[type]
+                            return line[type] && line[type].length > 0
                      })
                      for (let i = 0; i < lines.length; i++) {
                             for (let j = 0; j < lines[i][type].length; j++) {
@@ -383,6 +398,7 @@ class symbolDocumenter {
               if (!symbols) {
                      symbols = this.getAllof(uri.fsPath, "symbol", {})
               }
+              // name = name.replace(/\(.*\)/, "\(.*\)")
               if (vscode.workspace.getConfiguration().get("ez80-asm.caseInsensitive")) {
                      const symbol = symbols[Object.keys(symbols).find(key => key.toLowerCase() === name.toLowerCase())]
                      return symbol
@@ -395,3 +411,6 @@ exports.symbolDocumenter = symbolDocumenter
 exports.SymbolDescriptor = SymbolDescriptor
 exports.possibleRef = possibleRef
 exports.DocumentTable = DocumentTable
+exports.includeLineRegex = includeLineRegex
+exports.labelDefinitionRegex = labelDefinitionRegex
+exports.opcodeRegex = opcodeRegex

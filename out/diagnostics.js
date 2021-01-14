@@ -2,15 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const imports = require("./imports")
+const symbolDocumenter = require("./symbolDocumenter")
 const path = require("path");
-const includeLineRegex = /^\s*\#?(include)[\W]+"([^"]+)".*$/i;
-const labelDefinitionRegex = /^((([a-zA-Z_][a-zA-Z_0-9]*)?\.)?[a-zA-Z_][a-zA-Z_0-9]*[:]{0,2}).*$/;
+const includeLineRegex = symbolDocumenter.includeLineRegex
+const labelDefinitionRegex = symbolDocumenter.labelDefinitionRegex
 const wordregex = /([\w\.]+(\.\w+)?(\.|\b))/g
 const numberRegex = /((\$|0x)[0-9a-fA-F]+\b)|(\b[0-9a-fA-F]+h\b)|(%[01]+\b)|(\b[01]+b\b)|(\b[0-9]+d?\b)/g
 const firstoperandregex = /^\s*[\w\.]+\s+([^\,\r\n\f\v]+)/
 const secondoperandregex = /^.*?,\s*(.*)/
 const nonCommentRegex = /^([^;]+[^\,\r\n\t\f\v ;])/g
-const opcodeRegex = /\b(ADC|ADD|CP|DAA|DEC|INC|MLT|NEG|SBC|SUB|BIT|RES|SET|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EX|EXX|IN|IN0|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUT|OUT0|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|TSTIO|LD|LEA|PEA|POP|PUSH|AND|CPL|OR|TST|XOR|CCF|DI|EI|HALT|IM|NOP|RSMIX|SCF|SLP|STMIX|CALL|DJNZ|JP|JR|RET|RETI|RETN|RST|RL|RLA|RLC|RLCA|RLD|RR|RRA|RRC|RRCA|RRD|SLA|SRA|SRL)\b/i;
+const opcodeRegex = symbolDocumenter.opcodeRegex
 const noOperandOpcodeRegex = /\b(DAA|NEG|CPD|CPDR|CPI|CPIR|LDD|LDDR|LDI|LDIR|EXX|IND|INDR|INDRX|IND2|IND2R|INDM|INDMR|INI|INIR|INIRX|INI2|INI2R|INIM|INIMR|OTDM|OTDMR|OTDRX|OTIM|OTIMR|OTIRX|OUTD|OTDR|OUTD2|OTD2R|OUTI|OTIR|OUTI2|OTI2R|CCF|DI|EI|HALT|NOP|RSMIX|SCF|SLP|STMIX|RETI|RETN|RLA|RLCA|RRA|RRCA|RRD)\b/i;
 const suffixRegex = /(\.)(LIL|LIS|SIL|SIS|L|S)\b/i;
 const todoRegex = /.*;\s*todo\b:?\s*(.*)/i
@@ -53,12 +54,18 @@ class diagnosticProvider {
               for (let i = 0; i < refs.length; i++) {
                      const diag = new vscode.Diagnostic(refs[i].range, "Symbol not found")
                      const curDiags = table.lines[refs[i].line].diagnostics
-                     if (refs[i].line != previousLine) {
+                     const index = curDiags.findIndex((diagnostic) => {
+                            return diagnostic.range.intersection(diag.range)
+                     })
+                     const isSym = this.symbolDocumenter.checkSymbol(refs[i].name, document.uri, symbols)
+                     if (!isSym && refs[i].line != previousLine) {
                             curDiags.length = 0
                             previousLine = refs[i].line
-                     }
-                     if (!this.symbolDocumenter.checkSymbol(refs[i].name, document.uri, symbols)) {
                             curDiags.push(diag)
+                     } else if (!isSym) {
+                            curDiags.push(diag)
+                     } else if (index != -1) {
+                            curDiags.splice(index, 1)
                      }
               }
               if (vscode.workspace.getConfiguration().get("ez80-asm.diagnosticProvider")) {
@@ -184,6 +191,10 @@ class diagnosticProvider {
                             let diagline = nonCommentMatch
                             diagline = diagline.replace(numberRegex, validNumber);
                             const diagwordmatch = diagline.match(wordregex);
+                            const symbol = this.symbolDocumenter.checkSymbol(diagwordmatch[0], document.uri.fsPath, symbols)
+                            if (symbol && symbol.kind == vscode.SymbolKind.Constant) {
+                                   return diagnosticsArray
+                            }
                             let opcodeskip = false
                             let invalid = true
                             if (!diagline.match(/^\s*(\#|\.|db|dw|dl)/gi)) {      // check the opcode
@@ -197,7 +208,7 @@ class diagnosticProvider {
                                    }
                                    if (!diagwordmatch[0].match(opcodeRegex)) {        // if the opcode isn't valid
                                           const range = new vscode.Range(lineNumber, startChar, lineNumber, endChar)
-                                          diagnosticsArray.push(new vscode.Diagnostic(range, "Unknown ez80 opcode"));
+                                          diagnosticsArray.push(new vscode.Diagnostic(range, "Unknown opcode"));
                                           return diagnosticsArray;
                                    } else if (diagwordmatch[0].match(noOperandOpcodeRegex)) { // if the opcode doesn't use an operand
                                           if (diagwordmatch.length > 1) {

@@ -40,6 +40,8 @@ class semanticsProvider {
                                    tokensBuilder.push(range, 'variable');
                             } else if (symbol.kind == vscode.SymbolKind.Function) {
                                    tokensBuilder.push(range, 'label');
+                            } else if (symbol.kind == vscode.SymbolKind.Constant) {
+                                   tokensBuilder.push(range, 'macro')
                             }
                      }
               }
