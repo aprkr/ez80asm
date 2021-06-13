@@ -1,51 +1,56 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
-const imports = require("./imports")
 
 /**
  * Searches refs to find semantic tokens
  */
 class semanticsProvider {
-       /**
-        * 
-        * @param {imports.symbolDocumenter} symbolDocumenter 
-        * @param {vscode.SemanticTokensLegend} legend 
-        */
-       constructor(symbolDocumenter, legend) {
-              this.symbolDocumenter = symbolDocumenter;
-              this.legend = legend
-       }
-       /**
-        * 
-        * @param {vscode.TextDocument} document 
-        * @param {vscode.CancellationToken} token 
-        */
-       provideDocumentSemanticTokens(document, token) {
-              const table = this.symbolDocumenter.documents[document.uri.fsPath]
-              if (!table) {
-                     return
-              }
-              const legend = this.legend
-              const symbols = this.symbolDocumenter.getAllof(document.uri.fsPath, "symbol", {})
-              const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-              const refs = this.symbolDocumenter.getAllinTable(table, "refs", [])
-              for (let i = 0; i < refs.length; i++) {
-                     const symbol = this.symbolDocumenter.checkSymbol(refs[i].name, document.uri, symbols)
-                     if (symbol) {
-                            const range = refs[i].range
-                            if (symbol.kind == vscode.SymbolKind.Method) {
-                                   tokensBuilder.push(range, 'function');
-                            } else if (symbol.kind == vscode.SymbolKind.Variable) {
-                                   tokensBuilder.push(range, 'variable');
-                            } else if (symbol.kind == vscode.SymbolKind.Function) {
-                                   tokensBuilder.push(range, 'label');
-                            } else if (symbol.kind == vscode.SymbolKind.Constant) {
-                                   tokensBuilder.push(range, 'macro')
-                            }
-                     }
-              }
-              return tokensBuilder.build("tokens")
-       }
+      /**
+       * 
+       * @param {} symbolDocumenter 
+       * @param {vscode.SemanticTokensLegend} legend 
+       */
+      constructor(symbolDocumenter, legend) {
+            this.symbolDocumenter = symbolDocumenter
+            this.legend = legend
+      }
+      /**
+       * 
+       * @param {vscode.TextDocument} document 
+       * @param {vscode.CancellationToken} token 
+       */
+      provideDocumentSemanticTokens(document, token) {
+            const docTable = this.symbolDocumenter.docTables[document.uri.fsPath]
+            if (!docTable) {
+                  return
+            }
+            const refs = docTable.refs.getTable()
+            const tokensBuilder = new vscode.SemanticTokensBuilder(this.legend);
+            for (let i = 0; i < refs.length; i++) {
+                  const refArray = refs[i].value
+                  const symbol = this.symbolDocumenter.checkSymbol(refs[i].key, document.uri.fsPath)
+                  if (symbol) {
+                        for (let j = 0; j < refArray.length; j++) {
+                              const refLine = refArray[j]
+                              const line = refLine.lineNumber
+                              const startChar = refLine.text.indexOf(refs[i].key)
+                              const endChar = startChar + refs[i].key.length
+                              const range = new vscode.Range(line, startChar, line, endChar)
+                              if (symbol.kind == vscode.SymbolKind.Method) {
+                                    tokensBuilder.push(range, 'function');
+                              } else if (symbol.kind == vscode.SymbolKind.Variable) {
+                                    tokensBuilder.push(range, 'variable');
+                              } else if (symbol.kind == vscode.SymbolKind.Function) {
+                                    tokensBuilder.push(range, 'label');
+                              } else if (symbol.kind == vscode.SymbolKind.Constant) {
+                                    tokensBuilder.push(range, 'macro')
+                              }
+                        }
+                  } else {
+                        // invalid ref
+                  }
+            }
+            return tokensBuilder.build("tokens")
+
+      }
 }
 exports.semanticsProvider = semanticsProvider

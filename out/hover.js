@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const hexRegex = /^(\$|0x)([0-9a-fA-F]+)$/;
 const hexRegex2 = /^([0-9a-fA-F]+)h$/;
@@ -20,9 +18,12 @@ class hoverProvider {
         const range = document.getWordRangeAtPosition(position, /((\$|0x)[A-Fa-f0-9]+\b)|(%[01]+\b)|([01]+b\b)|([0-9]+d?\b)|([\w\.]+)|([A-Fa-f0-9]+h\b)/g);
         if (range) {
             const text = document.getText(range);
-            const symbol = this.symbolDocumenter.checkSymbol(text, document.uri)
+            const symbol = this.symbolDocumenter.checkSymbol(text, document.uri.fsPath)
             let numberValue = undefined;
-            if (symbol !== undefined && symbol.documentation !== undefined) {
+            if (symbol !== undefined) {
+                if (symbol.documentation === undefined) {
+                    return null
+                }
                 let hoverText = new vscode.MarkdownString()
                 if (symbol.kind == vscode.SymbolKind.Variable) {
                     hoverText.appendCodeblock(symbol.documentation.replace(/(\t| )+/g, " "), "ez80-asm")
