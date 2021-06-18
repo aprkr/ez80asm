@@ -30,11 +30,7 @@ class semanticsProvider {
                   const symbol = this.symbolDocumenter.checkSymbol(refs[i].key, document.uri.fsPath)
                   if (symbol) {
                         for (let j = 0; j < refArray.length; j++) {
-                              const refLine = refArray[j]
-                              const line = refLine.lineNumber
-                              const startChar = refLine.text.indexOf(refs[i].key)
-                              const endChar = startChar + refs[i].key.length
-                              const range = new vscode.Range(line, startChar, line, endChar)
+                              const range = this.symbolDocumenter.getRange(refs[i].key, refArray[j])
                               if (symbol.kind == vscode.SymbolKind.Method) {
                                     tokensBuilder.push(range, 'function');
                               } else if (symbol.kind == vscode.SymbolKind.Variable) {

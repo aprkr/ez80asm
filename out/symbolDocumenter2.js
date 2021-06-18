@@ -13,6 +13,24 @@ class SymbolDescriptor {
             this.line = line
       }
 }
+class CasedHashTable extends HashTable { 
+      constructor(capacity) {
+            super(capacity)
+      }
+      set(key, value) {
+            return super.set(changeCase(key), value)
+      }
+      get(key) {
+            return super.get(changeCase(key))
+      }
+      has(key) {
+            return super.has(changeCase(key))
+      }
+      delete(key, lineNumber) {
+            return super.delete(changeCase(key), lineNumber)
+      }
+
+}
 
 class Include {
       constructor(fsPath, line, parent) {
@@ -29,9 +47,9 @@ class DocumentTable {
             this.fsPath = fsPath
             this.lines = []
             this.includes = new HashTable()
-            this.symbols = new HashTable()
-            this.refs = new HashTable()
-            this.parent = null
+            this.symbols = new CasedHashTable()
+            this.refs = new CasedHashTable()
+            this.parents = []
       }
 }
 class Line {
@@ -140,7 +158,7 @@ exports.symbolDocumenter = class {
                               const name = match[0]
                               this.addSymbol(name, kind, textArray, line, fsPath, docTable.symbols)
                         }
-                        let formattedText = this.formatLineText(lineText)
+                        let formattedText = lineText.replace(/^\S+/, "").replace(/;.*$/, "").replace(/\".+\"|\'.+\'/, "1").replace(/\s+/g, " ").trim()
                         const regularLine = lineText.match(/^\s*(\#|\.)/)
                         if (!regularLine) {
                               if (match = lineText.match(this.regexs.equateRegex)) {
@@ -159,7 +177,7 @@ exports.symbolDocumenter = class {
                         } else {
                               formattedText = formattedText.replace(/^\s*(\#|\.)\w+/, "")
                         }
-                        const refs = formattedText.replace(this.regexs.numberRegex, "").replace(this.regexs.registerRegex, "").replace(this.regexs.conditionalRegex, "").replace(this.regexs.nonRefRegex, "").match(/\w+/g)
+                        const refs = formattedText.replace(this.regexs.numberRegex, "").replace(this.regexs.registerRegex, "").replace(this.regexs.conditionalRegex, "").replace(this.regexs.nonRefRegex, "").match(/[\w\.]+/g)
                         if (refs) {
                               line.refs = refs
                               for (let i = 0; i < refs.length; i++) {
@@ -178,11 +196,11 @@ exports.symbolDocumenter = class {
                   // end of scan
             } catch (error) {
                   if (!this.type) { // an error is guaranteed when extension starts up
-                        let type
-                        if (type = vscode.workspace.getConfiguration("ez80-asm").get("type")) {
-                              this.type = type
-                        } else if (fsPath.endsWith(".ez80")) {
+                        let type = vscode.workspace.getConfiguration("ez80-asm").get("type")
+                        if (fsPath.endsWith(".ez80")) {
                               this.type = "ez80"
+                        } else if (type) {
+                              this.type = type
                         } else {
                               this.type = "z80"
                         }
@@ -203,6 +221,9 @@ exports.symbolDocumenter = class {
                   const line = docTable.lines[count + startIndex]
                   if (line.include) {
                         docTable.includes.delete(line.include)
+                        const parentArray = this.docTables[line.include].parents
+                        const index = parentArray.indexOf(docTable.fsPath)
+                        parentArray.splice(index, 1)
                   }
                   if (line.symbol) {
                         docTable.symbols.delete(line.symbol.name)
@@ -211,18 +232,9 @@ exports.symbolDocumenter = class {
                         for (let i = 0; i < line.refs.length; i++) {
                               docTable.refs.delete(line.refs[i], line.lineNumber)
                         }
-
                   }
             }
             docTable.lines.splice(startIndex, deleteCount)
-      }
-      /**
-       * 
-       * @param {string} text 
-       * @returns {string} text
-       */
-      formatLineText(text) {
-            return text.replace(/^\S+/, "").replace(/;.*$/, "").replace(/\".+\"|\'.+\'/, "1").replace(/\s+/g, " ").trim()
       }
       /**
        * 
@@ -235,7 +247,7 @@ exports.symbolDocumenter = class {
        */
       addSymbol(name, kind, textArray, line, fsPath, symbolHashTable) {
             const documentation = this.getDocumentation(textArray, line.lineNumber, kind)
-            const symbol = new SymbolDescriptor(kind, documentation, fsPath, name, line)
+            const symbol = new SymbolDescriptor(kind, documentation, fsPath, changeCase(name), line)
             if (symbolHashTable.set(name, symbol)) {
                   line.symbol = symbol
             }
@@ -286,16 +298,25 @@ exports.symbolDocumenter = class {
                   if (table == undefined) {
                         const text = fs.readFileSync(includeUri.fsPath, "utf-8")
                         this.scan(text, includeUri.fsPath)
-                        this.docTables[includeUri.fsPath].parent = parentfsPath
+                  }
+                  const parentArray = this.docTables[includeUri.fsPath].parents
+                  if (!parentArray.includes(parentfsPath)) {
+                        parentArray.push(parentfsPath)
                   }
             }
             return fsPath
       }
+      /**
+       * I believe I adapted this from Donald Hays' RGBDZ Z80 extension
+       * @param {String} filename 
+       * @param {String} fsRelativeDir 
+       * @returns {String} fsPath to the file, otherwise ""
+       */
       resolveFilename(filename, fsRelativeDir) {
             // Try just sticking the filename onto the directory.
             let simpleJoin = path.resolve(fsRelativeDir, filename);
             if (fs.existsSync(simpleJoin)) {
-                  return simpleJoin;
+                  return vscode.Uri.file(simpleJoin).fsPath
             }
             // Grab the configured include paths. If it's a string, make it an array.
             var includePathConfiguration = vscode.workspace.getConfiguration("ez80-asm").get("includePath");
@@ -324,26 +345,70 @@ exports.symbolDocumenter = class {
        * 
        * @param {string} fsPath 
        * @param {string} name 
+       * @param {string[]=} searched
+       * @param {boolean} noSearchParent true to not search the parent
        */
-      checkSymbol(name, fsPath) {
+      getSymbolAndPath(name, fsPath, searched, noSearchParent) {
             const docTable = this.docTables[fsPath]
             let symbol = docTable.symbols.get(name)
+            if (!searched) {
+                  searched = [fsPath]
+            } else {
+                  searched.push(fsPath)
+            }
             if (symbol) {
-                  return symbol
+                  return [symbol, searched.pop()]
             }
             const includeTable = docTable.includes.getTable()
             if (includeTable.length > 0) {
                   for (let i = 0; i < includeTable.length; i++) {
-                        if (symbol = this.docTables[includeTable[i].key].symbols.get(name)) {
+                        if (!searched.includes(includeTable[i].key) && (symbol = this.getSymbolAndPath(name, includeTable[i].key, searched, true))) {
                               return symbol
                         }
                   }
             }
-            if (docTable.parent) {
-
+            if (noSearchParent) {
+                  return undefined
+            } else {
+                  for (let i = 0; i < docTable.parents.length; i++) {
+                        if (!searched.includes(docTable.parents[i])) {
+                              if (symbol = this.getSymbolAndPath(name, docTable.parents[i], searched)) {
+                                    return symbol
+                              }
+                        }
+                  }
             }
-            console.log()
-
-
+            return undefined
+      }
+      checkSymbol(name, fsPath) {
+            const array = this.getSymbolAndPath(name, fsPath)
+            if (array) {
+                  return array[0]
+            } else {
+                  return undefined
+            }
+      }
+      /**
+       * 
+       * @param {String} name 
+       * @param {Line} line 
+       * @returns {vscode.Range}
+       */
+      getRange(name, line) {
+            let startChar
+            if (vscode.workspace.getConfiguration("ez80-asm").get("caseInsensitive")) {
+                  startChar = line.text.toLowerCase().indexOf(name)
+            } else {
+                  startChar = line.text.indexOf(name)
+            }
+            const endChar = startChar + name.length
+            return new vscode.Range(line.lineNumber, startChar, line.lineNumber, endChar)
+      }
+}
+function changeCase(key) {
+      if (vscode.workspace.getConfiguration("ez80-asm").get("caseInsensitive")) {
+            return key.toLowerCase()
+      } else {
+            return key
       }
 }

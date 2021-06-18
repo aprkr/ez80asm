@@ -97,9 +97,10 @@ exports.HashTable = class HashTable {
             }
       }
       /**
-       * Don't use with refs
-       * @param {*} key 
-       * @returns 
+       * Pass linenumber for refs
+       * @param {String} key 
+       * @param {number=} lineNumber 
+       * @returns the deleted value
        */
       delete(key, lineNumber) {
             try {
@@ -142,7 +143,7 @@ exports.HashTable = class HashTable {
       }
       /**
        * 
-       * @returns [] copy of the hash table without collisions or empty indexes
+       * @returns {KeyValuePair[]} copy of the hash table without collisions or empty indexes
        */
       getTable() {
             const output = []
