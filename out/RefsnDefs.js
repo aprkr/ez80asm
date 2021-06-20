@@ -4,6 +4,8 @@ const path = require("path")
 exports.RefsnDefs = class RefsnDefs {
       constructor(symbolDocumenter) {
             this.symbolDocumenter = symbolDocumenter
+            this.getLocation = symbolDocumenter.getLocation // spaghetti code danger
+            this.getRange = symbolDocumenter.getRange
       }
       /**
        * 
@@ -109,49 +111,37 @@ exports.RefsnDefs = class RefsnDefs {
             }
             return edits
       }
-      getLocation(name, fsPath, line) {
-            const range = this.symbolDocumenter.getRange(name, line)
-            const uri = vscode.Uri.file(fsPath)
-            return new vscode.Location(uri, range)
+      provideDocumentSymbols(document, token) {
+            const table = this.symbolDocumenter.docTables[document.uri.fsPath];
+            if (!table) {
+                  return
+            }
+            const output = [];
+            const symbols = table.symbols.getTable()
+            for (let i = 0; i < symbols.length; i++) {
+                  const symbol = symbols[i].value
+                  const location = this.getLocation(symbol.name, document.uri.fsPath, symbol.line)
+                  output.push(new vscode.SymbolInformation(symbol.name, symbol.kind, undefined, location));
+            }
+            return output
+      }
+      provideWorkspaceSymbols(query, token) {
+            const output = []
+            const searched = []
+            for (var path in this.symbolDocumenter.docTables) {
+                  if (!searched.includes(path)) {
+                        this.symbolDocumenter.workspaceSymbolsrecurse(output, searched, false, path)
+                  }
+            }
+            return output
       }
       /**
        * 
        * @param {String} name 
        * @param {String} fsPath 
-       * @param {[]=} output 
-       * @param {String[]=} searched 
-       * @param {boolean} noSearchParent true to not search the parent
        * @returns 
        */
-      getAllRefLocations(name, fsPath, output, searched, noSearchParent) {
-            const docTable = this.symbolDocumenter.docTables[fsPath]
-            let refArray = docTable.refs.get(name)
-            if (!searched) {
-                  output = []
-                  searched = [fsPath]
-            } else {
-                  searched.push(fsPath)
-            }
-            if (refArray) {
-                  for (let i = 0; i < refArray.length; i++) {
-                        output.push(this.getLocation(name, fsPath, refArray[i]))
-                  }
-            }
-            const includeTable = docTable.includes.getTable()
-            if (includeTable.length > 0) {
-                  for (let i = 0; i < includeTable.length; i++) {
-                        if (!searched.includes(includeTable[i].key)) {
-                              this.getAllRefLocations(name, includeTable[i].key, output, searched, true)
-                        }
-                  }
-            }
-            if (!noSearchParent) {
-                  for (let i = 0; i < docTable.parents.length; i++) {
-                        if (!searched.includes(docTable.parents[i])) {
-                              this.getAllRefLocations(name, docTable.parents[i], output, searched)
-                        }
-                  }
-            }
-            return output
+      getAllRefLocations(name, fsPath) {
+            return this.symbolDocumenter.getAllRefLocationsrecurse(name, [], [], false, fsPath)
       }
 }

@@ -8,6 +8,7 @@ Webpacking?
 vscodeignore
 case sensitivity
 change settings options
+Store symbols so that key is cased but the actual value stays normal
 
 const char *preops[] = {"define", "include", "if", "ifdef", "ifndef", "else", "elif", "endif",
 		"undef", "undefine", "comment", "endcomment", "macro", "endmacro", "import", "defcont", "region", "endregion", NULL};

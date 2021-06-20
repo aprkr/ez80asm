@@ -13,7 +13,7 @@ class SymbolDescriptor {
             this.line = line
       }
 }
-class CasedHashTable extends HashTable { 
+class CasedHashTable extends HashTable {
       constructor(capacity) {
             super(capacity)
       }
@@ -345,10 +345,24 @@ exports.symbolDocumenter = class {
        * 
        * @param {string} fsPath 
        * @param {string} name 
-       * @param {string[]=} searched
-       * @param {boolean} noSearchParent true to not search the parent
+       * @returns the symbol if found
        */
-      getSymbolAndPath(name, fsPath, searched, noSearchParent) {
+      getSymbolAndPath(name, fsPath) {
+            try {
+                  this.getSymbolAndPathrecurse(name, [], false, fsPath)
+            } catch (symbol) {
+                  return symbol
+            }
+      }
+      /**
+       * 
+       * @param {String} name 
+       * @param {String[]} searched 
+       * @param {boolean} noSearchParent 
+       * @param {String} fsPath 
+       * @throws the symbol
+       */
+      getSymbolAndPathrecurse(name, searched, noSearchParent, fsPath) {
             const docTable = this.docTables[fsPath]
             let symbol = docTable.symbols.get(name)
             if (!searched) {
@@ -357,28 +371,106 @@ exports.symbolDocumenter = class {
                   searched.push(fsPath)
             }
             if (symbol) {
-                  return [symbol, searched.pop()]
+                  throw [symbol, searched.pop()]
             }
+            this.includeSearch(docTable, searched, this.getSymbolAndPathrecurse, [name, searched, true])
+            this.parentSearch(docTable, noSearchParent, searched, this.getSymbolAndPathrecurse, [name, searched, false])
+      }
+      /**
+       * 
+       * @param {String} name 
+       * @param {vscode.Location[]} output 
+       * @param {String[]} searched 
+       * @param {boolean} noSearchParent 
+       * @param {String} fsPath 
+       * @returns {vscode.Location[]}
+       */
+      getAllRefLocationsrecurse(name, output, searched, noSearchParent, fsPath) {
+            const docTable = this.docTables[fsPath]
+            let refArray = docTable.refs.get(name)
+            if (!searched) {
+                  output = []
+                  searched = [fsPath]
+            } else {
+                  searched.push(fsPath)
+            }
+            if (refArray) {
+                  for (let i = 0; i < refArray.length; i++) {
+                        output.push(this.getLocation(name, fsPath, refArray[i]))
+                  }
+            }
+            this.includeSearch(docTable, searched, this.getAllRefLocationsrecurse, [name, output, searched, true])
+            this.parentSearch(docTable, noSearchParent, searched, this.getAllRefLocationsrecurse, [name, output, searched, false])
+            return output
+
+      }
+      /**
+       * 
+       * @param {vscode.SymbolInformation[]} output 
+       * @param {String[]} searched 
+       * @param {boolean} noSearchParent 
+       * @param {String} fsPath 
+       * @returns {vscode.SymbolInformation[]}
+       */
+      workspaceSymbolsrecurse(output, searched, noSearchParent, fsPath) {
+            const docTable = this.docTables[fsPath]
+            const symbols = docTable.symbols.getTable()
+            for (let i = 0; i < symbols.length; i++) {
+                  const symbol = symbols[i].value
+                  const location = this.getLocation(symbol.name, fsPath, symbol.line)
+                  output.push(new vscode.SymbolInformation(symbol.name, symbol.kind, undefined, location));
+            }
+            searched.push(fsPath)
+            this.includeSearch(docTable, searched, this.workspaceSymbolsrecurse, [output, searched, true])
+            this.parentSearch(docTable, noSearchParent, searched, this.workspaceSymbolsrecurse, [output, searched, false])
+            return output
+      }
+      getLocation(name, fsPath, line) {
+            const range = this.getRange(name, line)
+            const uri = vscode.Uri.file(fsPath)
+            return new vscode.Location(uri, range)
+      }
+      /**
+       * 
+       * @param {DocumentTable} docTable 
+       * @param {String[]} searched 
+       * @param {Function} func 
+       * @param {[]} args 
+       */
+      includeSearch(docTable, searched, func, args) {
+            const index = args.length
+            args.push(null)
             const includeTable = docTable.includes.getTable()
             if (includeTable.length > 0) {
                   for (let i = 0; i < includeTable.length; i++) {
-                        if (!searched.includes(includeTable[i].key) && (symbol = this.getSymbolAndPath(name, includeTable[i].key, searched, true))) {
-                              return symbol
+                        if (!searched.includes(includeTable[i].key)) {
+                              args[index] = includeTable[i].key
+                              func.apply(this, args)
                         }
                   }
             }
+      }
+      /**
+       * 
+       * @param {DocumentTable} docTable 
+       * @param {boolean} noSearchParent 
+       * @param {String[]} searched 
+       * @param {Function} func 
+       * @param {[]} args 
+       */
+      parentSearch(docTable, noSearchParent, searched, func, args) {
+            const index = args.length
+            args.push(null)
             if (noSearchParent) {
-                  return undefined
+                  return
             } else {
                   for (let i = 0; i < docTable.parents.length; i++) {
                         if (!searched.includes(docTable.parents[i])) {
-                              if (symbol = this.getSymbolAndPath(name, docTable.parents[i], searched)) {
-                                    return symbol
-                              }
+                              args[index] = docTable.parents[i]
+                              func.apply(this, args)
                         }
                   }
             }
-            return undefined
       }
       checkSymbol(name, fsPath) {
             const array = this.getSymbolAndPath(name, fsPath)
